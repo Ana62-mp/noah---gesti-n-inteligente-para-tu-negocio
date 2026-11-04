@@ -1,4 +1,5 @@
 import { DeliveryStatusSummary } from './DeliveryStatusSummary';
+import { FilterBar } from '../../shared/ui/FilterBar';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
 import { apiService } from '../../shared/services/apiService';
@@ -21,6 +22,9 @@ import {
 export const DeliveryView: React.FC = () => {
   const { showToast } = useApp();
   const [orders, setOrders] = useState<DeliveryOrder[]>([]);
+  const [orderQuery, setOrderQuery] = useState('');
+  const [channelFilter, setChannelFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // New takeout order form
@@ -69,6 +73,13 @@ export const DeliveryView: React.FC = () => {
     showToast('Pedido para llevar creado y enrutado a cocina', 'success');
   };
 
+  const visibleOrders = orders.filter(
+    (order) =>
+      (!channelFilter || order.channel === channelFilter) &&
+      (!statusFilter || order.status === statusFilter) &&
+      (!orderQuery || `${order.customerName} ${order.orderNumber}`.toLowerCase().includes(orderQuery.toLowerCase()))
+  );
+
   return (
     <div className="space-y-3">
       {/* Top Header */}
@@ -85,6 +96,20 @@ export const DeliveryView: React.FC = () => {
 
       <DeliveryStatusSummary orders={orders} />
 
+      <FilterBar
+        search={{ value: orderQuery, onChange: setOrderQuery, placeholder: 'Buscar cliente o pedido…' }}
+        fields={[
+          { key: 'channel', label: 'Canal', type: 'select', options: [{ value: '', label: 'Todos' }, { value: 'propio', label: 'Propio / WhatsApp' }, { value: 'delivery_a', label: 'App delivery A' }, { value: 'delivery_b', label: 'App delivery B' }, { value: 'delivery_c', label: 'App delivery C' }] },
+          { key: 'status', label: 'Estado', type: 'select', options: [{ value: '', label: 'Todos' }, { value: 'received', label: 'Recibidos' }, { value: 'in_kitchen', label: 'En cocina' }, { value: 'on_the_way', label: 'En camino' }, { value: 'delivered', label: 'Entregados' }] },
+        ]}
+        values={{ channel: channelFilter, status: statusFilter }}
+        onChange={(key, value) => (key === 'channel' ? setChannelFilter(value) : setStatusFilter(value))}
+        onReset={() => { setOrderQuery(''); setChannelFilter(''); setStatusFilter(''); }}
+        activeCount={[orderQuery, channelFilter, statusFilter].filter(Boolean).length}
+        total={visibleOrders.length}
+        totalLabel="pedidos"
+      />
+
       {/* Integration Disclaimer Banner (RN-09 & CA-09) */}
       <div className="bg-[#FBF6E6] border border-[#EBD48F] rounded-2xl p-4 flex items-start gap-3">
         <ShieldCheck className="w-5 h-5 text-[#CF6811] shrink-0 mt-0.5" />
@@ -97,7 +122,7 @@ export const DeliveryView: React.FC = () => {
 
       {/* Channels Status Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {orders.map((o) => {
+        {visibleOrders.map((o) => {
           const statusLabels: Record<DeliveryOrder['status'], { label: string; v: 'banana' | 'harvest' | 'cinnamon' | 'olive' }> = {
             received: { label: 'Recibido', v: 'banana' },
             in_kitchen: { label: 'En cocina', v: 'harvest' },

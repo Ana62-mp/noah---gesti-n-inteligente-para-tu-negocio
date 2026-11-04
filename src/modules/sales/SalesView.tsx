@@ -1,6 +1,7 @@
 import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { FilterBar, FilterField } from '../../shared/ui/FilterBar';
 import { getBusinessProfile } from '../../shared/business/businessProfiles';
 import { useListParams } from '../../shared/hooks/useListParams';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
@@ -35,7 +36,8 @@ export const SalesView: React.FC = () => {
     totalPages: 0,
   });
 
-  const { page, pageSize, filter, search, setPage, setPageSize, setFilter, setSearch } = useListParams('all');
+  const list = useListParams('all');
+  const { page, pageSize, filter, search, setPage, setPageSize } = list;
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,13 +52,13 @@ export const SalesView: React.FC = () => {
 
   useEffect(() => {
     loadSales();
-  }, [page, pageSize, filter, search]);
+  }, [page, pageSize, filter, search, JSON.stringify(list.extras)]);
 
   const loadSales = async () => {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await apiService.getSales({ page, pageSize, filter, search });
+      const res = await apiService.getSales({ page, pageSize, filter, search, extras: list.extras });
       setSalesResult(res);
     } catch (e) {
       setLoadError(getErrorMessage(e));
@@ -210,36 +212,21 @@ export const SalesView: React.FC = () => {
             ))}
           </div>
 
-          {/* Filter Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[#E7E5E0]">
-            {hasChannelChoice ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-[#6B6B6B]">Canal:</span>
-              <select
-                value={filter}
-                onChange={(e) => {
-                  setFilter(e.target.value);
-                }}
-                className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-2.5 py-1 text-xs text-[#111111] focus:outline-none"
-              >
-                <option value="all">Todos los canales</option>
-                {vocabulary.saleChannels.map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </div>
-            ) : <span />}
-
-            <input
-              type="text"
-              placeholder={`Buscar ${vocabulary.itemNoun}…`}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-              }}
-              className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-3 py-1 text-xs text-[#111111] focus:outline-none focus:ring-1 focus:ring-[#CF6811] w-48"
-            />
-          </div>
+          <FilterBar
+            search={{ value: list.search, onChange: list.setSearch, placeholder: `Buscar ${vocabulary.itemNoun} o código…` }}
+            fields={[
+              ...(hasChannelChoice ? [{ key: 'filter', label: 'Canal', type: 'select', options: [{ value: 'all', label: 'Todos' }, ...vocabulary.saleChannels.map(({ value, label }) => ({ value, label }))] } as FilterField] : []),
+              { key: 'payment', label: 'Método de pago', type: 'select', options: [{ value: '', label: 'Todos' }, { value: 'cash', label: 'Efectivo' }, { value: 'card', label: 'Tarjeta' }, { value: 'transfer', label: 'Transferencia' }, { value: 'deuna', label: 'DeUna' }] },
+              { key: 'from', label: 'Desde', type: 'date' },
+              { key: 'to', label: 'Hasta', type: 'date' },
+            ]}
+            values={list.fieldValues}
+            onChange={list.setField}
+            onReset={list.reset}
+            activeCount={list.activeFilters}
+            total={salesResult.total}
+            totalLabel="ventas"
+          />
 
           {/* Paginated Table */}
           <PaginatedTable
@@ -250,9 +237,7 @@ export const SalesView: React.FC = () => {
             pageSize={salesResult.pageSize}
             totalPages={salesResult.totalPages}
             onPageChange={setPage}
-            onPageSizeChange={(newSize) => {
-              setPageSize(newSize);
-            }}
+            onPageSizeChange={setPageSize}
             isLoading={isLoading}
             error={loadError}
             onRetry={loadSales}

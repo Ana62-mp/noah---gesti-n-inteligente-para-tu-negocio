@@ -4,6 +4,7 @@ import { apiService } from '../../shared/services/apiService';
 import { KitchenTicket } from '../../shared/types';
 import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
+import { FilterBar } from '../../shared/ui/FilterBar';
 import { Modal } from '../../shared/ui/Modal';
 import {
   ChefHat,
@@ -19,7 +20,10 @@ import confetti from 'canvas-confetti';
 
 export const KitchenView: React.FC = () => {
   const { showToast } = useApp();
-  const [tickets, setTickets] = useState<KitchenTicket[]>([]);
+  const [allTickets, setTickets] = useState<KitchenTicket[]>([]);
+  const [ticketQuery, setTicketQuery] = useState('');
+  const [channelFilter, setChannelFilter] = useState('');
+  const [urgencyFilter, setUrgencyFilter] = useState('');
   const [selectedTicketForPrint, setSelectedTicketForPrint] = useState<KitchenTicket | null>(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
@@ -48,12 +52,32 @@ export const KitchenView: React.FC = () => {
     setIsPrintModalOpen(true);
   };
 
+  const tickets = allTickets.filter(
+    (ticket) =>
+      (!channelFilter || ticket.channel === channelFilter) &&
+      (!urgencyFilter || ticket.urgency === urgencyFilter) &&
+      (!ticketQuery || `${ticket.orderNumber} ${ticket.waiterName} ${ticket.tableNumber ?? ''} ${ticket.items.map((item) => item.dishName).join(' ')}`.toLowerCase().includes(ticketQuery.toLowerCase()))
+  );
   const pendingTickets = tickets.filter((t) => t.status === 'pending');
   const preparingTickets = tickets.filter((t) => t.status === 'preparing');
   const readyTickets = tickets.filter((t) => t.status === 'ready');
 
   return (
     <div className="space-y-3">
+      <FilterBar
+        search={{ value: ticketQuery, onChange: setTicketQuery, placeholder: 'Buscar comanda, mesa, mesero o plato…' }}
+        fields={[
+          { key: 'channel', label: 'Canal', type: 'select', options: [{ value: '', label: 'Todos' }, { value: 'salon', label: 'Salón' }, { value: 'takeout', label: 'Para llevar' }, { value: 'delivery', label: 'Delivery' }] },
+          { key: 'urgency', label: 'Demora', type: 'select', options: [{ value: '', label: 'Todas' }, { value: 'normal', label: 'En tiempo' }, { value: 'delayed', label: 'Demoradas' }] },
+        ]}
+        values={{ channel: channelFilter, urgency: urgencyFilter }}
+        onChange={(key, value) => (key === 'channel' ? setChannelFilter(value) : setUrgencyFilter(value))}
+        onReset={() => { setTicketQuery(''); setChannelFilter(''); setUrgencyFilter(''); }}
+        activeCount={[ticketQuery, channelFilter, urgencyFilter].filter(Boolean).length}
+        total={tickets.length}
+        totalLabel="comandas"
+      />
+
       {/* Top Header */}
       <div className="flex flex-wrap items-center justify-end gap-2">
 <div className="flex items-center gap-2">

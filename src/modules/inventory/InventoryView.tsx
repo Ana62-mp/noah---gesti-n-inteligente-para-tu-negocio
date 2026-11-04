@@ -1,6 +1,7 @@
 import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { FilterBar } from '../../shared/ui/FilterBar';
 import { useListParams } from '../../shared/hooks/useListParams';
 import { getBusinessProfile } from '../../shared/business/businessProfiles';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
@@ -36,7 +37,9 @@ export const InventoryView: React.FC = () => {
     totalPages: 0,
   });
 
-  const { page, pageSize, filter, search, setPage, setPageSize, setFilter, setSearch } = useListParams('all');
+  const list = useListParams('all');
+  const { page, pageSize, filter, search, setPage, setPageSize, setFilter } = list;
+  const facets = apiService.getFacets();
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -49,7 +52,7 @@ export const InventoryView: React.FC = () => {
 
   useEffect(() => {
     loadIngredients();
-  }, [page, pageSize, filter, search, activeTab]);
+  }, [page, pageSize, filter, search, activeTab, JSON.stringify(list.extras)]);
 
   const loadIngredients = async () => {
     setIsLoading(true);
@@ -64,6 +67,7 @@ export const InventoryView: React.FC = () => {
         pageSize,
         filter: activeFilter,
         search,
+        extras: list.extras,
       });
       setIngredientsResult(res);
       if (res.items.length > 0 && !selectedIngId) {
@@ -216,35 +220,21 @@ export const InventoryView: React.FC = () => {
         </Button>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[#E7E5E0]">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-[#6B6B6B]">Filtro de estado:</span>
-          <select
-            value={filter}
-            onChange={(e) => {
-              setFilter(e.target.value);
-            }}
-            className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-2.5 py-1 text-xs text-[#111111] focus:outline-none"
-          >
-            <option value="all">Todos los estados</option>
-            <option value="normal">Normal</option>
-            <option value="low">Stock bajo</option>
-            <option value="overstock">Sobrestock</option>
-            <option value="expiring">Por vencer</option>
-          </select>
-        </div>
-
-        <input
-          type="text"
-          placeholder="Buscar insumo o categoría…"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-          }}
-          className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-3 py-1 text-xs text-[#111111] focus:outline-none focus:ring-1 focus:ring-[#CF6811] w-52"
-        />
-      </div>
+      <FilterBar
+        search={{ value: list.search, onChange: list.setSearch, placeholder: 'Buscar por nombre, categoría o proveedor…' }}
+        fields={[
+          { key: 'filter', label: 'Estado', type: 'select', options: [{ value: 'all', label: 'Todos' }, { value: 'normal', label: 'Normal' }, { value: 'low', label: 'Stock bajo' }, { value: 'overstock', label: 'Sobrestock' }, { value: 'expiring', label: 'Por vencer' }] },
+          { key: 'category', label: 'Categoría', type: 'select', options: [{ value: '', label: 'Todas' }, ...facets.ingredientCategories.map((value) => ({ value, label: value }))] },
+          { key: 'location', label: 'Ubicación', type: 'select', options: [{ value: '', label: 'Todas' }, ...facets.ingredientLocations.map((value) => ({ value, label: value }))] },
+          { key: 'supplier', label: 'Proveedor', type: 'select', options: [{ value: '', label: 'Todos' }, ...facets.ingredientSuppliers.map((value) => ({ value, label: value }))] },
+        ]}
+        values={list.fieldValues}
+        onChange={list.setField}
+        onReset={list.reset}
+        activeCount={list.activeFilters}
+        total={ingredientsResult.total}
+        totalLabel="ítems"
+      />
 
       {/* Paginated Table */}
       <PaginatedTable
@@ -255,9 +245,7 @@ export const InventoryView: React.FC = () => {
         pageSize={ingredientsResult.pageSize}
         totalPages={ingredientsResult.totalPages}
         onPageChange={setPage}
-        onPageSizeChange={(newSize) => {
-          setPageSize(newSize);
-        }}
+        onPageSizeChange={setPageSize}
         isLoading={isLoading}
             error={loadError}
             onRetry={loadIngredients}

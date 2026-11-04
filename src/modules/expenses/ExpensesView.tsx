@@ -1,6 +1,8 @@
 import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { FilterBar } from '../../shared/ui/FilterBar';
+import { DonutChart } from '../../shared/ui/Charts';
 import { useListParams } from '../../shared/hooks/useListParams';
 import { getBusinessProfile } from '../../shared/business/businessProfiles';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
@@ -36,7 +38,8 @@ export const ExpensesView: React.FC = () => {
     totalPages: 0,
   });
 
-  const { page, pageSize, filter, search, setPage, setPageSize, setFilter, setSearch } = useListParams(canSeeAllExpenses ? 'all' : 'insumos');
+  const list = useListParams(canSeeAllExpenses ? 'all' : 'insumos');
+  const { page, pageSize, filter, search, setPage, setPageSize } = list;
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,13 +54,13 @@ export const ExpensesView: React.FC = () => {
 
   useEffect(() => {
     loadExpenses();
-  }, [page, pageSize, filter, search]);
+  }, [page, pageSize, filter, search, JSON.stringify(list.extras)]);
 
   const loadExpenses = async () => {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await apiService.getExpenses({ page, pageSize, filter, search });
+      const res = await apiService.getExpenses({ page, pageSize, filter, search, extras: list.extras });
       setExpensesResult(res);
     } catch (e) {
       setLoadError(getErrorMessage(e));
@@ -143,7 +146,6 @@ export const ExpensesView: React.FC = () => {
     },
   ];
 
-  const cashflowMax = Math.max(...cashflowDays.flatMap((day) => [day.in, day.out]), 1);
   const cashflowIn = cashflowDays.reduce((sum, day) => sum + day.in, 0);
   const cashflowOut = cashflowDays.reduce((sum, day) => sum + day.out, 0);
   const heaviestDay = cashflowDays.reduce((top, day) => (day.out > top.out ? day : top), cashflowDays[0]);
@@ -211,38 +213,24 @@ export const ExpensesView: React.FC = () => {
             </div>
           )}
 
-          {/* Filters Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[#E7E5E0]">
-            {canSeeAllExpenses && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-[#6B6B6B]">Categoría:</span>
-              <select
-                value={filter}
-                onChange={(e) => {
-                  setFilter(e.target.value);
-                }}
-                className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-2.5 py-1 text-xs text-[#111111] focus:outline-none"
-              >
-                <option value="all">Todas las categorías</option>
-                <option value="insumos">Insumos y mercado</option>
-                <option value="sueldos">Nómina y sueldos</option>
-                <option value="servicios">Servicios básicos</option>
-                <option value="arriendo">Arriendo</option>
-                <option value="otros">Otros</option>
-              </select>
-            </div>
-            )}
-
-            <input
-              type="text"
-              placeholder="Buscar gasto o proveedor…"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-              }}
-              className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-3 py-1 text-xs text-[#111111] focus:outline-none focus:ring-1 focus:ring-[#CF6811] w-48"
-            />
-          </div>
+          <FilterBar
+            search={{ value: list.search, onChange: list.setSearch, placeholder: 'Buscar gasto o proveedor…' }}
+            fields={[
+              ...(canSeeAllExpenses
+                ? [{ key: 'filter', label: 'Categoría', type: 'select' as const, options: [{ value: 'all', label: 'Todas' }, { value: 'insumos', label: 'Insumos' }, { value: 'sueldos', label: 'Nómina y sueldos' }, { value: 'servicios', label: 'Servicios básicos' }, { value: 'arriendo', label: 'Arriendo' }, { value: 'otros', label: 'Otros' }] }]
+                : []),
+              { key: 'payment', label: 'Pago', type: 'select', options: [{ value: '', label: 'Todos' }, { value: 'cash', label: 'Efectivo' }, { value: 'transfer', label: 'Transferencia' }, { value: 'card', label: 'Tarjeta' }] },
+              { key: 'receipt', label: 'Comprobante', type: 'select', options: [{ value: '', label: 'Todos' }, { value: 'yes', label: 'Con comprobante' }, { value: 'no', label: 'Sin comprobante' }] },
+              { key: 'from', label: 'Desde', type: 'date' },
+              { key: 'to', label: 'Hasta', type: 'date' },
+            ]}
+            values={list.fieldValues}
+            onChange={list.setField}
+            onReset={list.reset}
+            activeCount={list.activeFilters}
+            total={expensesResult.total}
+            totalLabel="gastos"
+          />
 
           {/* Table */}
           <PaginatedTable
@@ -253,9 +241,7 @@ export const ExpensesView: React.FC = () => {
             pageSize={expensesResult.pageSize}
             totalPages={expensesResult.totalPages}
             onPageChange={setPage}
-            onPageSizeChange={(newSize) => {
-              setPageSize(newSize);
-            }}
+            onPageSizeChange={setPageSize}
             isLoading={isLoading}
             error={loadError}
             onRetry={loadExpenses}
@@ -284,32 +270,21 @@ export const ExpensesView: React.FC = () => {
             </div>
           </div>
 
-          {/* Cashflow visual comparison */}
-          <div className="grid grid-cols-8 gap-2 sm:gap-4 items-end h-56 border-b border-[#E7E5E0] pb-2">
-            {cashflowDays.map((d, i) => {
-              const inH = (d.in / cashflowMax) * 100;
-              const outH = (d.out / cashflowMax) * 100;
-
-              return (
-                <div key={i} className="flex flex-col items-center h-full justify-end gap-1.5 group">
-                  <div className="flex items-end gap-1.5 w-full justify-center h-full">
-                    {/* Entradas */}
-                    <div
-                      className="w-3 sm:w-6 bg-[#5C5011] rounded-t-sm transition-all group-hover:brightness-110"
-                      style={{ height: `${inH}%` }}
-                      title={`Entradas ${d.day}: $${d.in}`}
-                    />
-                    {/* Salidas */}
-                    <div
-                      className="w-3 sm:w-6 bg-[#A43108] rounded-t-sm transition-all group-hover:brightness-110"
-                      style={{ height: `${outH}%` }}
-                      title={`Salidas ${d.day}: $${d.out}`}
-                    />
-                  </div>
-                  <span className="text-[11px] font-bold text-[#6B6B6B]">{d.day}</span>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
+            <DonutChart
+              data={[{ label: 'Entradas', value: cashflowIn }, { label: 'Salidas', value: cashflowOut }]}
+              centerCaption="Movimiento total"
+            />
+            <ul className="space-y-1">
+              {cashflowDays.map((day) => (
+                <li key={day.day} className="grid grid-cols-[4rem_1fr_1fr_5rem] items-center gap-2 text-xs rounded-lg px-2 py-1 hover:bg-[#FBF6E6]">
+                  <span className="font-bold text-[#6B6B6B]">{day.day}</span>
+                  <span className="tabular-nums text-[#2F7D5B] font-semibold">+{formatCurrency(day.in)}</span>
+                  <span className="tabular-nums text-[#B83232] font-semibold">-{formatCurrency(day.out)}</span>
+                  <span className={`text-right tabular-nums font-bold ${day.in - day.out >= 0 ? 'text-[#111111]' : 'text-[#B83232]'}`}>{formatCurrency(day.in - day.out)}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

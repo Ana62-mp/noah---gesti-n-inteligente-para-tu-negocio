@@ -4,6 +4,7 @@ import { apiService } from '../../shared/services/apiService';
 import { NotificationAlert } from '../../shared/types';
 import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
+import { FilterBar } from '../../shared/ui/FilterBar';
 import { Modal } from '../../shared/ui/Modal';
 import { getVisibleAlerts } from '../../shared/permissions/rolePermissions';
 import {
@@ -22,6 +23,9 @@ export const AlertsView: React.FC = () => {
   const { showToast, setActiveSection, setUnreadNotificationsCount, currentRole, accessibleSections, canAccess } = useApp();
   const canCreatePromo = currentRole === 'owner';
   const [alerts, setAlerts] = useState<NotificationAlert[]>([]);
+  const [alertQuery, setAlertQuery] = useState('');
+  const [severityFilter, setSeverityFilter] = useState('');
+  const [topicFilter, setTopicFilter] = useState('');
   const [selectedAlertForPromo, setSelectedAlertForPromo] = useState<NotificationAlert | null>(null);
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
 
@@ -79,9 +83,21 @@ export const AlertsView: React.FC = () => {
         </Badge>
       </div>
 
+      <FilterBar
+        search={{ value: alertQuery, onChange: setAlertQuery, placeholder: 'Buscar alerta…' }}
+        fields={[
+          { key: 'severity', label: 'Gravedad', type: 'select', options: [{ value: '', label: 'Todas' }, { value: 'critical', label: 'Crítico' }, { value: 'warning', label: 'Advertencia' }, { value: 'info', label: 'Oportunidad' }] },
+          { key: 'topic', label: 'Tema', type: 'select', options: [{ value: '', label: 'Todos' }, { value: 'stock', label: 'Inventario' }, { value: 'margin', label: 'Márgenes' }, { value: 'sales', label: 'Ventas' }] },
+        ]}
+        values={{ severity: severityFilter, topic: topicFilter }}
+        onChange={(key, value) => (key === 'severity' ? setSeverityFilter(value) : setTopicFilter(value))}
+        onReset={() => { setAlertQuery(''); setSeverityFilter(''); setTopicFilter(''); }}
+        activeCount={[alertQuery, severityFilter, topicFilter].filter(Boolean).length}
+      />
+
       {/* Alerts Feed */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-        {alerts.map((alert) => {
+        {alerts.filter((alert) => (!severityFilter || alert.severity === severityFilter) && (!topicFilter || alert.topic === topicFilter) && (!alertQuery || `${alert.title} ${alert.message}`.toLowerCase().includes(alertQuery.toLowerCase()))).map((alert) => {
           if (alert.dismissed) return null;
 
           const severityStyles = {

@@ -5,6 +5,7 @@ import { Appointment, BarberService } from '../../shared/types';
 import { BARBER_SERVICES_MOCK } from '../../shared/services/mockData';
 import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
+import { FilterBar } from '../../shared/ui/FilterBar';
 import { Modal } from '../../shared/ui/Modal';
 import { NoahOrb } from '../../shared/ui/NoahOrb';
 import { formatCurrency } from '../../shared/utils/formatters';
@@ -23,12 +24,16 @@ import {
 import confetti from 'canvas-confetti';
 
 const AGENDA_DATE = '2026-11-03';
+const BARBERS = ['David', 'Carlos', 'Andrés'];
 
 export const BarbershopView: React.FC = () => {
   const { showToast, setActiveSection, canAccess } = useApp();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services] = useState<BarberService[]>(BARBER_SERVICES_MOCK);
   const [selectedBarber, setSelectedBarber] = useState('David');
+  const [customerQuery, setCustomerQuery] = useState('');
+  const [serviceFilter, setServiceFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // New appointment form
@@ -108,23 +113,18 @@ export const BarbershopView: React.FC = () => {
         </div>
       </div>
 
-      {/* Barber Filter Selector */}
-      <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-[#E7E5E0]">
-        <span className="text-xs font-semibold text-[#6B6B6B]">Filtrar por barbero:</span>
-        {['David', 'Carlos', 'Andrés'].map((b) => (
-          <button
-            key={b}
-            onClick={() => setSelectedBarber(b)}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-              selectedBarber === b
-                ? 'bg-[#421A05] text-white shadow-[var(--shadow-soft)]'
-                : 'bg-[#F5F4F1] text-[#6B6B6B] hover:text-[#111111]'
-            }`}
-          >
-            {b}
-          </button>
-        ))}
-      </div>
+      <FilterBar
+        search={{ value: customerQuery, onChange: setCustomerQuery, placeholder: 'Buscar cliente…' }}
+        fields={[
+          { key: 'barber', label: 'Barbero', type: 'select', options: BARBERS.map((name) => ({ value: name, label: name })) },
+          { key: 'service', label: 'Servicio', type: 'select', options: [{ value: '', label: 'Todos' }, ...services.map(({ id, name }) => ({ value: id, label: name }))] },
+          { key: 'status', label: 'Estado', type: 'select', options: [{ value: '', label: 'Todos' }, { value: 'confirmed', label: 'Confirmadas' }, { value: 'completed', label: 'Atendidas' }, { value: 'cancelled', label: 'Canceladas' }] },
+        ]}
+        values={{ barber: selectedBarber, service: serviceFilter, status: statusFilter }}
+        onChange={(key, value) => (key === 'barber' ? setSelectedBarber(value) : key === 'service' ? setServiceFilter(value) : setStatusFilter(value))}
+        onReset={() => { setCustomerQuery(''); setServiceFilter(''); setStatusFilter(''); }}
+        activeCount={[customerQuery, serviceFilter, statusFilter].filter(Boolean).length}
+      />
 
       {/* Schedule Agenda Timeline Grid */}
       <div className="bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)] space-y-4">
@@ -144,7 +144,12 @@ export const BarbershopView: React.FC = () => {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-2">
           {['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'].map((timeSlot) => {
             const appt = appointments.find(
-              (a) => a.barberName === selectedBarber && a.time.slice(0, 2) === timeSlot.slice(0, 2)
+              (a) =>
+                a.barberName === selectedBarber &&
+                a.time.slice(0, 2) === timeSlot.slice(0, 2) &&
+                (!serviceFilter || a.serviceId === serviceFilter) &&
+                (!statusFilter || a.status === statusFilter) &&
+                (!customerQuery || a.customerName.toLowerCase().includes(customerQuery.toLowerCase()))
             );
 
             return (

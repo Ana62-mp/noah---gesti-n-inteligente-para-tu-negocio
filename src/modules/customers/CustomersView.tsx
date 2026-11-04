@@ -4,6 +4,7 @@ import { usePagedList } from '../../shared/hooks/usePagedList';
 import { apiService } from '../../shared/services/apiService';
 import { Customer } from '../../shared/types';
 import { Badge } from '../../shared/ui/Badge';
+import { FilterBar } from '../../shared/ui/FilterBar';
 import { Button } from '../../shared/ui/Button';
 import { Column, PaginatedTable } from '../../shared/ui/PaginatedTable';
 import { formatCurrency, formatDate } from '../../shared/utils/formatters';
@@ -53,16 +54,19 @@ export const CustomersView: React.FC = () => {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-1.5">
-          {FILTERS.map(({ id, label }) => (
-            <button key={id} onClick={() => list.setFilter(id)} aria-pressed={list.filter === id} className={`min-h-8 px-2.5 rounded-lg text-xs font-semibold ${list.filter === id ? 'bg-[#421A05] text-white' : 'bg-white border border-[#E7E5E0] text-[#421A05]'}`}>
-              {label}
-            </button>
-          ))}
-        </div>
-        <input value={list.search} onChange={(event) => list.setSearch(event.target.value)} placeholder="Buscar cliente…" aria-label="Buscar cliente" className="h-9 w-56 rounded-lg border border-[#E7E5E0] bg-white px-3 text-xs" />
-      </div>
+      <FilterBar
+        search={{ value: list.search, onChange: list.setSearch, placeholder: 'Buscar cliente…' }}
+        fields={[
+          { key: 'filter', label: 'Saldo', type: 'select', options: FILTERS.map(({ id, label }) => ({ value: id, label })) },
+          { key: 'frequency', label: 'Frecuencia', type: 'select', options: [{ value: '', label: 'Todos' }, { value: 'frequent', label: 'Frecuentes (15+ visitas)' }, { value: 'occasional', label: 'Ocasionales' }] },
+        ]}
+        values={list.fieldValues}
+        onChange={list.setField}
+        onReset={list.reset}
+        activeCount={list.activeFilters}
+        total={list.result.total}
+        totalLabel="clientes"
+      />
       <PaginatedTable
         columns={columns}
         data={list.result.items}

@@ -71,6 +71,7 @@ export interface PaginationParams {
   pageSize?: number;
   search?: string;
   filter?: string;
+  extras?: Record<string, string>;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
@@ -161,6 +162,8 @@ class ApiService {
       : this.dishes.filter(
           (dish) =>
             (!params.filter || params.filter === 'all' || dish.category === params.filter) &&
+            (!params.extras?.availability || (params.extras.availability === 'yes' ? dish.isAvailable : !dish.isAvailable)) &&
+            (!params.extras?.margin || (params.extras.margin === 'low' ? dish.grossMargin < 0.3 : params.extras.margin === 'mid' ? dish.grossMargin >= 0.3 && dish.grossMargin < 0.5 : dish.grossMargin >= 0.5)) &&
             (!term || dish.name.toLowerCase().includes(term))
         );
     return this.paginate(list, params);
@@ -172,6 +175,8 @@ class ApiService {
     const term = params.search?.toLowerCase() ?? '';
     let list = this.simulateEmpty ? [] : this.customers.filter((customer) => !term || customer.name.toLowerCase().includes(term));
     if (params.filter === 'owing') list = list.filter((customer) => customer.balanceDue > 0);
+    if (params.extras?.frequency === 'frequent') list = list.filter((customer) => customer.visits >= 15);
+    if (params.extras?.frequency === 'occasional') list = list.filter((customer) => customer.visits < 15);
     return this.paginate(list, params);
   }
 
@@ -190,9 +195,20 @@ class ApiService {
       : this.products.filter(
           (product) =>
             (!params.filter || params.filter === 'all' || product.category === params.filter) &&
+            (!params.extras?.stock || (params.extras.stock === 'out' ? product.stock === 0 : params.extras.stock === 'low' ? product.stock > 0 && product.stock < 10 : product.stock >= 10)) &&
             (!term || product.name.toLowerCase().includes(term))
         );
     return this.paginate(list, params);
+  }
+
+  public getFacets() {
+    const unique = (values: string[]) => [...new Set(values)].sort();
+    return {
+      ingredientCategories: unique(this.ingredients.map(({ category }) => category)),
+      ingredientLocations: unique(this.ingredients.map(({ location }) => location)),
+      ingredientSuppliers: unique(this.ingredients.map(({ supplierName }) => supplierName)),
+      supplierCities: unique(this.suppliers.map(({ city }) => city)),
+    };
   }
 
   public getProductCategories(): string[] {
@@ -208,7 +224,15 @@ class ApiService {
   public async getPromotions(params: PaginationParams = {}): Promise<PaginatedResult<Promotion>> {
     await this.delay(150);
     if (this.simulateError) throw new Error('No se pudieron cargar las promociones.');
-    return this.paginate(this.simulateEmpty ? [] : [...this.promotions], params);
+    const term = params.search?.toLowerCase() ?? '';
+    const list = this.simulateEmpty
+      ? []
+      : this.promotions.filter(
+          (promotion) =>
+            (!params.filter || params.filter === 'all' || promotion.status === params.filter) &&
+            (!term || promotion.title.toLowerCase().includes(term) || promotion.item.toLowerCase().includes(term))
+        );
+    return this.paginate(list, params);
   }
 
   public async addPromotion(promotion: Omit<Promotion, 'id' | 'status'>): Promise<Promotion> {
@@ -247,8 +271,12 @@ class ApiService {
     let list = [...this.sales];
 
     if (params.filter && params.filter !== 'all') {
-      list = list.filter((s) => s.channel === params.filter || s.paymentMethod === params.filter);
+      list = list.filter((s) => s.channel === params.filter);
     }
+    const sx = params.extras ?? {};
+    if (sx.payment) list = list.filter((s) => s.paymentMethod === sx.payment);
+    if (sx.from) list = list.filter((s) => s.date >= sx.from);
+    if (sx.to) list = list.filter((s) => s.date <= sx.to);
     if (params.search) {
       const q = params.search.toLowerCase();
       list = list.filter((s) => s.id.toLowerCase().includes(q) || s.items.some((i) => i.dishName.toLowerCase().includes(q)));
@@ -285,6 +313,11 @@ class ApiService {
     if (params.filter && params.filter !== 'all') {
       list = list.filter((e) => e.category === params.filter);
     }
+    const ex = params.extras ?? {};
+    if (ex.payment) list = list.filter((e) => e.paymentMethod === ex.payment);
+    if (ex.receipt) list = list.filter((e) => (ex.receipt === 'yes' ? e.receiptAttached : !e.receiptAttached));
+    if (ex.from) list = list.filter((e) => e.date >= ex.from);
+    if (ex.to) list = list.filter((e) => e.date <= ex.to);
     if (params.search) {
       const q = params.search.toLowerCase();
       list = list.filter((e) => e.concept.toLowerCase().includes(q) || (e.supplier && e.supplier.toLowerCase().includes(q)));
@@ -357,6 +390,10 @@ class ApiService {
     if (params.filter && params.filter !== 'all') {
       list = list.filter((i) => i.status === params.filter);
     }
+    const ix = params.extras ?? {};
+    if (ix.category) list = list.filter((i) => i.category === ix.category);
+    if (ix.location) list = list.filter((i) => i.location === ix.location);
+    if (ix.supplier) list = list.filter((i) => i.supplierName === ix.supplier);
     if (params.search) {
       const q = params.search.toLowerCase();
       list = list.filter((i) => i.name.toLowerCase().includes(q) || i.category.toLowerCase().includes(q) || i.supplierName.toLowerCase().includes(q));
@@ -406,6 +443,9 @@ class ApiService {
     const page = params.page || 1;
     const pageSize = params.pageSize || 10;
     let list = [...this.suppliers];
+    const ux = params.extras ?? {};
+    if (ux.trend) list = list.filter((item) => item.priceTrend === ux.trend);
+    if (ux.city) list = list.filter((item) => item.city === ux.city);
 
     if (params.search) {
       const q = params.search.toLowerCase();

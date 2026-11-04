@@ -17,7 +17,7 @@ export const usePagedList = <T,>(
     setIsLoading(true);
     setError(null);
     try {
-      setResult(await fetchPage({ page: list.page, pageSize: list.pageSize, filter: list.filter, search: list.search }));
+      setResult(await fetchPage({ page: list.page, pageSize: list.pageSize, filter: list.filter, search: list.search, extras: list.extras }));
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     } finally {
@@ -27,7 +27,7 @@ export const usePagedList = <T,>(
 
   useEffect(() => {
     reload();
-  }, [list.page, list.pageSize, list.filter, list.search]);
+  }, [list.page, list.pageSize, list.filter, list.search, JSON.stringify(list.extras)]);
 
   return { ...list, result, isLoading, error, reload };
 };

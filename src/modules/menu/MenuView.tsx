@@ -4,6 +4,7 @@ import { apiService } from '../../shared/services/apiService';
 import { Dish } from '../../shared/types';
 import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
+import { FilterBar } from '../../shared/ui/FilterBar';
 import { formatCurrency, formatPercent } from '../../shared/utils/formatters';
 import { usePagedList } from '../../shared/hooks/usePagedList';
 import { Pagination } from '../../shared/ui/Pagination';
@@ -47,42 +48,20 @@ export const MenuView: React.FC = () => {
         )}
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[#E7E5E0]">
-        <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none py-1">
-          {[
-            { id: 'all', label: 'Todos' },
-            { id: 'platos_fuertes', label: 'Platos fuertes' },
-            { id: 'sopas', label: 'Sopas y caldos' },
-            { id: 'mariscos', label: 'Mariscos' },
-            { id: 'desayunos', label: 'Desayunos' },
-            { id: 'bebidas', label: 'Bebidas' },
-            { id: 'postres', label: 'Postres' },
-          ].map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => list.setFilter(cat.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                list.filter === cat.id
-                  ? 'bg-[#421A05] text-white shadow-[var(--shadow-soft)]'
-                  : 'bg-[#F5F4F1] text-[#6B6B6B] hover:text-[#111111]'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Buscar plato…"
-            value={list.search}
-            onChange={(e) => list.setSearch(e.target.value)}
-            className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-3 py-1.5 text-xs text-[#111111] focus:outline-none focus:ring-1 focus:ring-[#CF6811] w-48"
-          />
-        </div>
-      </div>
+      <FilterBar
+        search={{ value: list.search, onChange: list.setSearch, placeholder: 'Buscar plato…' }}
+        fields={[
+          { key: 'filter', label: 'Categoría', type: 'select', options: [{ value: 'all', label: 'Todas' }, { value: 'platos_fuertes', label: 'Platos fuertes' }, { value: 'sopas', label: 'Sopas y caldos' }, { value: 'mariscos', label: 'Mariscos' }, { value: 'desayunos', label: 'Desayunos' }, { value: 'bebidas', label: 'Bebidas' }, { value: 'postres', label: 'Postres' }] },
+          { key: 'availability', label: 'Disponibilidad', type: 'select', options: [{ value: '', label: 'Todos' }, { value: 'yes', label: 'Disponibles' }, { value: 'no', label: 'Agotados' }] },
+          ...(canSeeCosts ? [{ key: 'margin', label: 'Margen', type: 'select' as const, options: [{ value: '', label: 'Todos' }, { value: 'high', label: '50 % o más' }, { value: 'mid', label: '30 % a 50 %' }, { value: 'low', label: 'Menos de 30 %' }] }] : []),
+        ]}
+        values={list.fieldValues}
+        onChange={list.setField}
+        onReset={list.reset}
+        activeCount={list.activeFilters}
+        total={list.result.total}
+        totalLabel="platos"
+      />
 
       {/* Dishes Grid */}
       {list.error && <ErrorState message={list.error} onRetry={list.reload} />}

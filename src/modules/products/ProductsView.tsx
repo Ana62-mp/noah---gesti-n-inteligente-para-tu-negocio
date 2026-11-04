@@ -4,6 +4,7 @@ import { usePagedList } from '../../shared/hooks/usePagedList';
 import { apiService } from '../../shared/services/apiService';
 import { Product } from '../../shared/types';
 import { Badge } from '../../shared/ui/Badge';
+import { FilterBar } from '../../shared/ui/FilterBar';
 import { Column, PaginatedTable } from '../../shared/ui/PaginatedTable';
 import { formatCurrency } from '../../shared/utils/formatters';
 
@@ -47,16 +48,19 @@ export const ProductsView: React.FC = () => {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-1.5">
-          {categories.map((category) => (
-            <button key={category} onClick={() => list.setFilter(category)} aria-pressed={list.filter === category} className={`min-h-8 px-2.5 rounded-lg text-xs font-semibold ${list.filter === category ? 'bg-[#421A05] text-white' : 'bg-white border border-[#E7E5E0] text-[#421A05]'}`}>
-              {category === 'all' ? 'Todos' : category}
-            </button>
-          ))}
-        </div>
-        <input value={list.search} onChange={(event) => list.setSearch(event.target.value)} placeholder="Buscar producto…" aria-label="Buscar producto" className="h-9 w-56 rounded-lg border border-[#E7E5E0] bg-white px-3 text-xs" />
-      </div>
+      <FilterBar
+        search={{ value: list.search, onChange: list.setSearch, placeholder: 'Buscar producto…' }}
+        fields={[
+          { key: 'filter', label: 'Categoría', type: 'select', options: categories.map((category) => ({ value: category, label: category === 'all' ? 'Todas' : category })) },
+          { key: 'stock', label: 'Stock', type: 'select', options: [{ value: '', label: 'Todo' }, { value: 'ok', label: 'Con stock' }, { value: 'low', label: 'Stock bajo' }, { value: 'out', label: 'Sin stock' }] },
+        ]}
+        values={list.fieldValues}
+        onChange={list.setField}
+        onReset={list.reset}
+        activeCount={list.activeFilters}
+        total={list.result.total}
+        totalLabel="productos"
+      />
       <PaginatedTable
         columns={columns}
         data={list.result.items}

@@ -1,6 +1,7 @@
 import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { FilterBar } from '../../shared/ui/FilterBar';
 import { useListParams } from '../../shared/hooks/useListParams';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
 import { Supplier } from '../../shared/types';
@@ -30,20 +31,22 @@ export const SuppliersView: React.FC = () => {
     totalPages: 0,
   });
 
-  const { page, pageSize, search, setPage, setPageSize, setSearch } = useListParams();
+  const list = useListParams();
+  const { page, pageSize, search, setPage, setPageSize } = list;
+  const facets = apiService.getFacets();
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
 
   useEffect(() => {
     loadSuppliers();
-  }, [page, pageSize, search]);
+  }, [page, pageSize, search, JSON.stringify(list.extras)]);
 
   const loadSuppliers = async () => {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await apiService.getSuppliers({ page, pageSize, search });
+      const res = await apiService.getSuppliers({ page, pageSize, search, extras: list.extras });
       setSuppliersResult(res);
     } catch (e) {
       setLoadError(getErrorMessage(e));
@@ -126,18 +129,19 @@ export const SuppliersView: React.FC = () => {
 
   return (
     <div className="space-y-3">
-      {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-end gap-2">
-<input
-          type="text"
-          placeholder="Buscar proveedor…"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-          }}
-          className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-3 py-1.5 text-xs text-[#111111] focus:outline-none focus:ring-1 focus:ring-[#CF6811] w-56"
-        />
-      </div>
+      <FilterBar
+        search={{ value: list.search, onChange: list.setSearch, placeholder: 'Buscar proveedor o producto…' }}
+        fields={[
+          { key: 'trend', label: 'Precios', type: 'select', options: [{ value: '', label: 'Todos' }, { value: 'increased', label: 'En alza' }, { value: 'stable', label: 'Estables' }, { value: 'decreased', label: 'A la baja' }] },
+          { key: 'city', label: 'Ciudad', type: 'select', options: [{ value: '', label: 'Todas' }, ...facets.supplierCities.map((value) => ({ value, label: value }))] },
+        ]}
+        values={list.fieldValues}
+        onChange={list.setField}
+        onReset={list.reset}
+        activeCount={list.activeFilters}
+        total={suppliersResult.total}
+        totalLabel="proveedores"
+      />
 
       {/* Paginated Table */}
       <PaginatedTable
@@ -148,9 +152,7 @@ export const SuppliersView: React.FC = () => {
         pageSize={suppliersResult.pageSize}
         totalPages={suppliersResult.totalPages}
         onPageChange={setPage}
-        onPageSizeChange={(newSize) => {
-          setPageSize(newSize);
-        }}
+        onPageSizeChange={setPageSize}
         isLoading={isLoading}
             error={loadError}
             onRetry={loadSuppliers}

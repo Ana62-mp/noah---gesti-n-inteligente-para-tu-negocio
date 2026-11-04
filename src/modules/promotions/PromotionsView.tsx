@@ -6,6 +6,7 @@ import { apiService } from '../../shared/services/apiService';
 import { Promotion } from '../../shared/types';
 import { Badge, BadgeVariant } from '../../shared/ui/Badge';
 import { Button } from '../../shared/ui/Button';
+import { FilterBar } from '../../shared/ui/FilterBar';
 import { Modal } from '../../shared/ui/Modal';
 import { Column, PaginatedTable } from '../../shared/ui/PaginatedTable';
 
@@ -61,6 +62,16 @@ export const PromotionsView: React.FC = () => {
 
   return (
     <div className="space-y-3">
+      <FilterBar
+        search={{ value: list.search, onChange: list.setSearch, placeholder: 'Buscar promoción…' }}
+        fields={[{ key: 'filter', label: 'Estado', type: 'select', options: [{ value: 'all', label: 'Todas' }, { value: 'draft', label: 'Borradores' }, { value: 'active', label: 'Activas' }, { value: 'ended', label: 'Finalizadas' }] }]}
+        values={list.fieldValues}
+        onChange={list.setField}
+        onReset={list.reset}
+        activeCount={list.activeFilters}
+        total={list.result.total}
+        totalLabel="promociones"
+      />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-[#6B6B6B]">Noah sugiere, tú apruebas. Ninguna promoción cambia precios ni se publica sola.</p>
         <Button variant="primary" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsCreating(true)}>Nueva promoción</Button>
