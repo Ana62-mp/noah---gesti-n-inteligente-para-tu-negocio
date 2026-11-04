@@ -25,6 +25,31 @@ test('accented questions reach their scripted answer', async () => {
   }
 });
 
+test('barbershop answers with its own figures and restaurant questions do not mix', async () => {
+  const [, , BARBER] = BUSINESS_OPTIONS;
+  const today = await aiService.askNoah('¿Cuánto vendimos hoy?', BARBER, 'owner');
+  assert.ok(today.message.text.includes('$112,00') && !today.message.text.includes('$780'), today.message.text);
+  const restaurant = await aiService.askNoah('Agéndame un corte el martes', RESTAURANT, 'owner', [], ['dashboard', 'sales']);
+  assert.ok(!restaurant.message.actionDraft);
+});
+
+test('a screen granted by the admin opens the matching answers', async () => {
+  const denied = await aiService.askNoah('¿Cuánto ganamos este mes?', RESTAURANT, 'waiter');
+  assert.ok(!denied.message.text.includes('$2.950'));
+  const granted = await aiService.askNoah('¿Cuánto ganamos este mes?', RESTAURANT, 'waiter', [], ['tables', 'reports']);
+  assert.ok(granted.message.text.includes('$2.950'));
+});
+
+test('each business keeps its own data', async () => {
+  apiService.setActiveBusiness('store');
+  const store = await apiService.getSales();
+  assert.ok(store.items.every((sale) => sale.channel === 'counter'));
+  apiService.setActiveBusiness('barbershop');
+  const barber = await apiService.getSales();
+  assert.ok(barber.items.every((sale) => sale.channel === 'chair'));
+  apiService.setActiveBusiness('restaurant');
+});
+
 test('the store owner gets store figures, not the restaurant ones', async () => {
   const { message } = await aiService.askNoah('¿Cuánto gasté este mes?', STORE, 'owner');
   assert.ok(message.text.includes('$3.650,00'), message.text);
@@ -35,7 +60,7 @@ test('finance questions are refused for staff roles', async () => {
   for (const role of ['cashier', 'waiter', 'kitchen', 'inventory'] as const) {
     const { message } = await aiService.askNoah('¿Cuánto ganamos este mes?', RESTAURANT, role);
     assert.ok(!message.text.includes('$2.950'), role);
-    assert.ok(message.text.includes('solo la ve'), role);
+    assert.ok(message.text.includes('no está habilitada'), role);
   }
 });
 
