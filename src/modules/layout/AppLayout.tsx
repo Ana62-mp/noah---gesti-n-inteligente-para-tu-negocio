@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
-import { BUSINESS_OPTIONS } from '../../shared/services/mockData';
+import { apiService } from '../../shared/services/apiService';
+import {
+  ROLE_LABELS,
+  ROLE_SCOPE,
+  canAccessSection,
+  getDisplayName,
+  getRolesForBusiness,
+  getVisibleAlerts,
+} from '../../shared/permissions/rolePermissions';
+import { buildNavSections, getSectionLabel } from './navigation';
 import { UserRole } from '../../shared/types';
 import { Logo } from '../../shared/ui/Logo';
 import { NoahOrb } from '../../shared/ui/NoahOrb';
@@ -10,36 +19,7 @@ import { SidePanel } from '../../shared/ui/SidePanel';
 import { NoahChat } from '../assistant/NoahChat';
 import { GuidedTour } from '../tour/GuidedTour';
 import { ToastContainer } from '../../shared/ui/ToastContainer';
-import {
-  LayoutDashboard,
-  Receipt,
-  TrendingDown,
-  ArrowLeftRight,
-  BarChart3,
-  UtensilsCrossed,
-  Calculator,
-  Grid3X3,
-  ChefHat,
-  Bike,
-  Boxes,
-  Truck,
-  Scissors,
-  CalendarCheck,
-  Sparkles,
-  Mic,
-  BellRing,
-  Smartphone,
-  Settings,
-  Search,
-  Menu as MenuIcon,
-  X,
-  Compass,
-  ShoppingBag,
-  ShieldCheck,
-  ChevronDown,
-  LogOut,
-  User,
-} from 'lucide-react';
+import { BellRing, Compass, Eye, LogOut, Menu as MenuIcon, Search, ShieldCheck, Smartphone, X } from 'lucide-react';
 
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const {
@@ -51,6 +31,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     isAssistantOpen,
     setIsAssistantOpen,
     unreadNotificationsCount,
+    setUnreadNotificationsCount,
     startGuidedTour,
     showToast,
     currentUser,
@@ -73,73 +54,15 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isAssistantOpen, setIsAssistantOpen]);
 
-  // Sidebar navigation items grouped by section
-  const navSections = [
-    {
-      title: 'INICIO',
-      items: [
-        { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-        { id: 'voice_scenarios', label: 'Noah Escucha (Voz)', icon: <Mic className="w-4 h-4 text-[#CF6811]" />, highlight: true },
-      ],
-    },
-    {
-      title: 'FINANZAS',
-      items: [
-        { id: 'sales', label: 'Ventas y Caja', icon: <Receipt className="w-4 h-4" /> },
-        { id: 'expenses', label: 'Gastos y Compras', icon: <TrendingDown className="w-4 h-4" /> },
-        { id: 'reports', label: 'Reportes y Rentabilidad', icon: <BarChart3 className="w-4 h-4" /> },
-      ],
-    },
-    ...(currentBusiness.type === 'restaurant'
-      ? [
-          {
-            title: 'RESTAURANTE',
-            items: [
-              { id: 'costing', label: 'Costeo y Recetas', icon: <Calculator className="w-4 h-4 text-[#EBD48F]" /> },
-              { id: 'menu', label: 'Carta / Menú', icon: <UtensilsCrossed className="w-4 h-4" /> },
-              { id: 'tables', label: 'Mesas y Salón', icon: <Grid3X3 className="w-4 h-4" /> },
-              { id: 'kitchen', label: 'Cocina / Comandas', icon: <ChefHat className="w-4 h-4" /> },
-              { id: 'delivery', label: 'Delivery / Para llevar', icon: <Bike className="w-4 h-4" /> },
-            ],
-          },
-          {
-            title: 'INVENTARIO',
-            items: [
-              { id: 'inventory', label: 'Insumos y Bodega', icon: <Boxes className="w-4 h-4" /> },
-              { id: 'suppliers', label: 'Proveedores', icon: <Truck className="w-4 h-4" /> },
-            ],
-          },
-        ]
-      : []),
-    ...(currentBusiness.type === 'store'
-      ? [
-          {
-            title: 'MODO TIENDA',
-            items: [
-              { id: 'store', label: 'Panel Tienda (Simple)', icon: <ShoppingBag className="w-4 h-4 text-[#EBD48F]" /> },
-              { id: 'expenses', label: 'Notas de compra', icon: <Receipt className="w-4 h-4" /> },
-            ],
-          },
-        ]
-      : []),
-    ...(currentBusiness.type === 'barbershop'
-      ? [
-          {
-            title: 'BARBERÍA',
-            items: [
-              { id: 'appointments', label: 'Agenda de Citas', icon: <CalendarCheck className="w-4 h-4 text-[#EBD48F]" /> },
-            ],
-          },
-        ]
-      : []),
-    {
-      title: 'CONFIGURACIÓN',
-      items: [
-        { id: 'mobile_preview', label: 'Ver como App Móvil', icon: <Smartphone className="w-4 h-4 text-[#CF6811]" /> },
-        { id: 'settings', label: 'Configuración / Demo', icon: <Settings className="w-4 h-4" /> },
-      ],
-    },
-  ];
+  useEffect(() => {
+    apiService.getNotifications().then((alerts) => {
+      setUnreadNotificationsCount(getVisibleAlerts(currentRole, alerts).filter((alert) => !alert.dismissed).length);
+    });
+  }, [currentRole]);
+
+  const navSections = buildNavSections(currentRole, currentBusiness.type);
+  const displayName = getDisplayName(currentRole, currentBusiness, currentUser);
+  const canOpenSettings = canAccessSection(currentRole, 'settings');
 
   const handleGlobalSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,7 +71,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
   };
 
   return (
-    <div className="min-h-screen bg-app flex flex-col antialiased">
+    <div className="h-screen bg-app flex flex-col antialiased overflow-hidden">
       {/* 1. Top Ribbon: Prototype & Sample Data (Acceptance Criteria CA-14) */}
       <div className="bg-[#421A05] text-[#EBD48F] text-[11px] font-semibold py-1 px-4 text-center border-b border-[#D59F3F]/30 flex items-center justify-between z-40">
         <div className="flex items-center gap-1.5 mx-auto">
@@ -169,7 +92,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         </button>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 min-h-0 flex overflow-hidden">
         {/* 2. Sidebar Navigation (in Espresso #421A05) */}
         <aside
           className={`fixed inset-y-0 left-0 z-40 w-64 gradient-espresso text-white flex flex-col justify-between transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
@@ -245,26 +168,18 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
           {/* Sidebar Footer: Highlight "Ver como app móvil" & Current Role */}
           <div className="p-4 border-t border-white/10 bg-[#2A1103]/60 space-y-2">
-            <button
-              onClick={() => {
-                setActiveSection('mobile_preview');
-                setMobileMenuOpen(false);
-              }}
-              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#CF6811] to-[#D59F3F] text-white font-bold text-xs shadow-md hover:brightness-105 transition-all flex items-center justify-center gap-2"
-            >
-              <Smartphone className="w-4 h-4" />
-              <span>Ver como App Móvil</span>
-            </button>
-
-            <div className="flex items-center justify-between text-[11px] text-[#EBD48F]/80 pt-1 px-1">
-              <span>Rol: <strong className="text-white capitalize">{currentRole}</strong></span>
+            {canAccessSection(currentRole, 'mobile_preview') && (
               <button
-                onClick={() => setActiveSection('settings')}
-                className="hover:text-white underline"
+                onClick={() => {
+                  setActiveSection('mobile_preview');
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#CF6811] to-[#D59F3F] text-white font-bold text-xs shadow-md hover:brightness-105 transition-all flex items-center justify-center gap-2"
               >
-                Cambiar
+                <Smartphone className="w-4 h-4" />
+                <span>Ver como App Móvil</span>
               </button>
-            </div>
+            )}
 
             <button
               onClick={logout}
@@ -293,9 +208,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
               <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-[#6B6B6B]">
                 <span className="text-[#111111] font-bold">{currentBusiness.name}</span>
                 <span>/</span>
-                <span className="text-[#CF6811] capitalize">
-                  {activeSection.replace('_', ' ')}
-                </span>
+                <span className="text-[#CF6811]">{getSectionLabel(activeSection, navSections)}</span>
               </div>
             </div>
 
@@ -323,28 +236,30 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                   onChange={(e) => setCurrentRole(e.target.value as UserRole)}
                   className="bg-transparent font-bold text-[#111111] focus:outline-none cursor-pointer"
                 >
-                  <option value="owner">Dueño</option>
-                  <option value="cashier">Caja</option>
-                  <option value="waiter">Mesero</option>
-                  <option value="kitchen">Cocina</option>
-                  <option value="inventory">Inventario</option>
+                  {getRolesForBusiness(currentBusiness.type).map((role) => (
+                    <option key={role} value={role}>
+                      {ROLE_LABELS[role]}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               {/* Notification Center Bell */}
-              <button
-                onClick={() => setActiveSection('alerts')}
-                className="relative p-2 rounded-xl text-[#111111] hover:bg-[#F5F4F1] transition-colors"
-                aria-label="Centro de notificaciones"
-                title="Centro de alertas de Noah"
-              >
-                <BellRing className="w-5 h-5 text-[#421A05]" />
-                {unreadNotificationsCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#A43108] text-white text-[10px] font-bold flex items-center justify-center">
-                    {unreadNotificationsCount}
-                  </span>
-                )}
-              </button>
+              {canAccessSection(currentRole, 'alerts') && (
+                <button
+                  onClick={() => setActiveSection('alerts')}
+                  className="relative p-2 rounded-xl text-[#111111] hover:bg-[#F5F4F1] transition-colors"
+                  aria-label="Centro de notificaciones"
+                  title="Centro de alertas de Noah"
+                >
+                  <BellRing className="w-5 h-5 text-[#421A05]" />
+                  {unreadNotificationsCount > 0 && (
+                    <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#A43108] text-white text-[10px] font-bold flex items-center justify-center">
+                      {unreadNotificationsCount}
+                    </span>
+                  )}
+                </button>
+              )}
 
               {/* Tour trigger button */}
               <Button
@@ -357,22 +272,19 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                 Recorrido demo
               </Button>
 
-              {/* Owner Avatar & Name */}
               <div
-                onClick={() => setActiveSection('settings')}
-                className="flex items-center gap-2 p-1 pl-2 bg-[#F5F4F1] hover:bg-[#E7E5E0] rounded-xl border border-[#E7E5E0] cursor-pointer transition-colors"
-                title={`${currentUser?.name || currentBusiness.ownerName} (${currentRole})`}
+                onClick={canOpenSettings ? () => setActiveSection('settings') : undefined}
+                className={`flex items-center gap-2 p-1 pl-2 bg-[#F5F4F1] rounded-xl border border-[#E7E5E0] transition-colors ${
+                  canOpenSettings ? 'hover:bg-[#E7E5E0] cursor-pointer' : ''
+                }`}
+                title={`${displayName} (${ROLE_LABELS[currentRole]})`}
               >
                 <div className="hidden md:flex flex-col text-right leading-tight">
-                  <span className="text-xs font-bold text-[#111111] max-w-[120px] truncate">
-                    {currentUser?.name || currentBusiness.ownerName}
-                  </span>
-                  <span className="text-[10px] text-[#6B6B6B] capitalize">
-                    {currentRole}
-                  </span>
+                  <span className="text-xs font-bold text-[#111111] max-w-[120px] truncate">{displayName}</span>
+                  <span className="text-[10px] text-[#6B6B6B]">{ROLE_LABELS[currentRole]}</span>
                 </div>
                 <div className="w-8 h-8 rounded-lg bg-[#EBD48F] border border-[#D59F3F] text-[#421A05] font-extrabold text-xs flex items-center justify-center shadow-2xs">
-                  {(currentUser?.name || currentBusiness.ownerName).slice(0, 2).toUpperCase()}
+                  {displayName.slice(0, 2).toUpperCase()}
                 </div>
               </div>
 
@@ -388,6 +300,14 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
             </div>
           </header>
 
+          {currentRole !== 'owner' && (
+            <div className="shrink-0 bg-[#FBF1DC] border-b border-[#D59F3F]/50 px-4 sm:px-6 py-1.5 flex items-center gap-2 text-xs text-[#421A05]">
+              <Eye className="w-3.5 h-3.5 text-[#CF6811] shrink-0" />
+              <strong className="shrink-0">Vista como: {ROLE_LABELS[currentRole]}.</strong>
+              <span className="truncate">{ROLE_SCOPE[currentRole]}</span>
+            </div>
+          )}
+
           {/* Main Scrollable Viewport */}
           <main key={activeSection} className="page-enter flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-28">
             <div className="max-w-7xl mx-auto space-y-6">{children}</div>
@@ -396,6 +316,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       </div>
 
       {/* Floating Noah Orb Button (Always reachable in bottom-right corner) */}
+      {activeSection !== 'mobile_preview' && (
       <div className="fixed bottom-6 right-6 z-40 flex items-center gap-3">
         <button
           onClick={() => setIsAssistantOpen(true)}
@@ -414,6 +335,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           </div>
         </button>
       </div>
+      )}
 
       {/* Slide-over SidePanel for Noah Assistant */}
       <SidePanel
@@ -423,7 +345,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         subtitle="Consulta por voz o escribe cualquier pregunta"
         width="lg"
       >
-        <NoahChat isFullScreen={false} />
+        <NoahChat key={`${currentRole}-${currentBusiness.id}`} isFullScreen={false} />
       </SidePanel>
 
       {/* Guided Tour Banner */}

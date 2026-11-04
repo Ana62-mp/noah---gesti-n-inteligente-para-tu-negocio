@@ -229,6 +229,7 @@ export interface Appointment {
 export interface NotificationAlert {
   id: string;
   severity: 'critical' | 'warning' | 'info';
+  topic: 'stock' | 'margin' | 'sales';
   title: string;
   message: string;
   ruleTriggered: string;

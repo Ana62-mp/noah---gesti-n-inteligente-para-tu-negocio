@@ -1,6 +1,7 @@
 import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { canViewFinancials } from '../../shared/permissions/rolePermissions';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
 import { Expense } from '../../shared/types';
 import { PaginatedTable, Column } from '../../shared/ui/PaginatedTable';
@@ -20,7 +21,8 @@ import {
 } from 'lucide-react';
 
 export const ExpensesView: React.FC = () => {
-  const { showToast, setIsAssistantOpen } = useApp();
+  const { showToast, setIsAssistantOpen, currentRole } = useApp();
+  const canSeeAllExpenses = canViewFinancials(currentRole);
   const [activeTab, setActiveTab] = useState<'expenses' | 'cashflow'>('expenses');
 
   const [expensesResult, setExpensesResult] = useState<PaginatedResult<Expense>>({
@@ -33,7 +35,7 @@ export const ExpensesView: React.FC = () => {
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState(canSeeAllExpenses ? 'all' : 'insumos');
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -158,13 +160,16 @@ export const ExpensesView: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
         <div>
-          <h2 className="text-lg font-bold text-[#111111]">Gastos y Compras</h2>
+          <h2 className="text-lg font-bold text-[#111111]">{canSeeAllExpenses ? 'Gastos y Compras' : 'Compras de insumos'}</h2>
           <p className="text-xs text-[#6B6B6B]">
-            Control de egresos, comprobantes, clasificación y flujo de caja neto.
+            {canSeeAllExpenses
+              ? 'Control de egresos, comprobantes, clasificación y flujo de caja neto.'
+              : 'Compras de mercadería con su proveedor y comprobante.'}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
+          {canSeeAllExpenses && (
           <div className="flex items-center p-1 bg-[#F5F4F1] rounded-xl border border-[#E7E5E0]">
             <button
               onClick={() => setActiveTab('expenses')}
@@ -187,6 +192,7 @@ export const ExpensesView: React.FC = () => {
               Flujo de caja
             </button>
           </div>
+          )}
 
           <Button
             variant="secondary"
@@ -203,13 +209,15 @@ export const ExpensesView: React.FC = () => {
             leftIcon={<Plus className="w-4 h-4" />}
             onClick={() => setIsModalOpen(true)}
           >
-            Nuevo gasto
+            {canSeeAllExpenses ? 'Nuevo gasto' : 'Nueva compra'}
           </Button>
         </div>
       </div>
 
       {activeTab === 'expenses' ? (
         <>
+          {canSeeAllExpenses && (
+            <>
           {/* Category Summary KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
@@ -243,9 +251,12 @@ export const ExpensesView: React.FC = () => {
               </div>
             </div>
           </div>
+            </>
+          )}
 
           {/* Filters Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[#E7E5E0]">
+            {canSeeAllExpenses && (
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-[#6B6B6B]">Categoría:</span>
               <select
@@ -264,6 +275,7 @@ export const ExpensesView: React.FC = () => {
                 <option value="otros">Otros</option>
               </select>
             </div>
+            )}
 
             <input
               type="text"
@@ -402,6 +414,7 @@ export const ExpensesView: React.FC = () => {
                 required
               />
             </div>
+            {canSeeAllExpenses && (
             <div>
               <label className="font-semibold text-[#111111] block mb-1">Categoría:</label>
               <select
@@ -416,6 +429,7 @@ export const ExpensesView: React.FC = () => {
                 <option value="otros">Otros gastos operativos</option>
               </select>
             </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">

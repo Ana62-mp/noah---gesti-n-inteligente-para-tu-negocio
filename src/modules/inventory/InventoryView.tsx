@@ -1,6 +1,7 @@
 import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { canCreateDraft } from '../../shared/permissions/rolePermissions';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
 import { Ingredient } from '../../shared/types';
 import { PaginatedTable, Column } from '../../shared/ui/PaginatedTable';
@@ -21,7 +22,8 @@ import {
 type MovementType = 'entry' | 'consumption' | 'adjustment' | 'waste';
 
 export const InventoryView: React.FC = () => {
-  const { showToast, setActiveSection } = useApp();
+  const { showToast, setActiveSection, currentRole } = useApp();
+  const canSuggestPromo = canCreateDraft(currentRole, 'promo');
   const [activeTab, setActiveTab] = useState<'stock' | 'movements' | 'expirations'>('stock');
 
   const [ingredientsResult, setIngredientsResult] = useState<PaginatedResult<Ingredient>>({
@@ -209,7 +211,7 @@ export const InventoryView: React.FC = () => {
           <AlertTriangle className="w-5 h-5 text-[#CF6811] shrink-0 mt-0.5" />
           <div className="text-xs text-[#421A05] leading-relaxed">
             <strong className="font-bold">Alerta de Sobrestock Crítico:</strong> 5 pollos enteros (≈ 13 kg)
-            vencen mañana y 3 kg de limón sutil en 2 días. Noah sugiere activar la promo 2x1 en seco de pollo.
+            vencen mañana y 3 kg de limón sutil en 2 días.{canSuggestPromo && ' Noah sugiere activar la promo 2x1 en seco de pollo.'}
           </div>
         </div>
 
@@ -219,7 +221,7 @@ export const InventoryView: React.FC = () => {
           className="shrink-0"
           onClick={() => setActiveSection('alerts')}
         >
-          Ver sugerencia de promo
+          {canSuggestPromo ? 'Ver sugerencia de promo' : 'Ver alertas'}
         </Button>
       </div>
 

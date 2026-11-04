@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
 import { apiService } from '../../shared/services/apiService';
-import { TableItem } from '../../shared/types';
+import { KitchenTicket, TableItem } from '../../shared/types';
 import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
 import { Modal } from '../../shared/ui/Modal';
 import { formatCurrency } from '../../shared/utils/formatters';
+import { canAccessSection, canChargeTables } from '../../shared/permissions/rolePermissions';
 import {
   Grid3X3,
   Users,
@@ -18,11 +19,21 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+const TABLE_STATUS_LABELS: Record<TableItem['status'], string> = {
+  free: 'Libre para comensales',
+  ordering: 'Pidiendo',
+  occupied: 'Ocupada',
+  billing: 'Por cobrar',
+};
+
 export const TablesView: React.FC = () => {
-  const { showToast, setActiveSection } = useApp();
+  const { showToast, setActiveSection, currentRole } = useApp();
+  const canCharge = canChargeTables(currentRole);
+  const canUseVoice = canAccessSection(currentRole, 'voice_scenarios');
   const [tables, setTables] = useState<TableItem[]>([]);
   const [selectedTable, setSelectedTable] = useState<TableItem | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [tableTickets, setTableTickets] = useState<KitchenTicket[]>([]);
 
   useEffect(() => {
     loadTables();
@@ -33,9 +44,11 @@ export const TablesView: React.FC = () => {
     setTables(data);
   };
 
-  const handleOpenTable = (table: TableItem) => {
+  const handleOpenTable = async (table: TableItem) => {
     setSelectedTable(table);
     setIsDetailModalOpen(true);
+    const tickets = await apiService.getKitchenTickets();
+    setTableTickets(tickets.filter((ticket) => ticket.tableNumber === table.id));
   };
 
   const handleCloseAndBillTable = async () => {
@@ -77,7 +90,7 @@ export const TablesView: React.FC = () => {
 
   const handleOccupyTable = async (status: TableItem['status']) => {
     if (!selectedTable) return;
-    await apiService.updateTableStatus(selectedTable.id, status, status === 'occupied' ? 38.50 : undefined);
+    await apiService.updateTableStatus(selectedTable.id, status);
     setIsDetailModalOpen(false);
     showToast(`Estado de Mesa ${selectedTable.id} actualizado`, 'info');
     loadTables();
@@ -189,7 +202,7 @@ export const TablesView: React.FC = () => {
               <div>
                 <div className="text-[#6B6B6B]">Estado actual:</div>
                 <div className="text-sm font-bold capitalize text-[#111111]">
-                  {selectedTable.status === 'free' ? 'Libre para comensales' : selectedTable.status}
+                  {TABLE_STATUS_LABELS[selectedTable.status]}
                 </div>
               </div>
               {selectedTable.total && (
@@ -213,13 +226,15 @@ export const TablesView: React.FC = () => {
                   >
                     Sentar comensales y abrir comanda
                   </Button>
-                  <Button
-                    variant="secondary"
-                    className="flex-1 min-w-[180px]"
-                    onClick={() => setActiveSection('voice_scenarios')}
-                  >
-                    Tomar pedido por voz
-                  </Button>
+                  {canUseVoice && (
+                    <Button
+                      variant="secondary"
+                      className="flex-1 min-w-[180px]"
+                      onClick={() => setActiveSection('voice_scenarios')}
+                    >
+                      Tomar pedido por voz
+                    </Button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -227,22 +242,40 @@ export const TablesView: React.FC = () => {
                 <div className="space-y-2">
                   <div className="font-bold text-[#111111]">Comanda activa:</div>
                   <div className="p-3 bg-[#FBF6E6] rounded-xl border border-[#EBD48F] text-[#421A05] space-y-1">
-                    <div>• 2x Secos de pollo ($11,00)</div>
-                    <div>• 3x Ceviches de camarón ($27,00) — <em>1 sin cebolla</em></div>
-                    <div>• 1x Jarra de naranjilla ($4,00)</div>
+                    {tableTickets.length === 0 && <div>Aún no hay platos enviados a cocina.</div>}
+                    {tableTickets.flatMap((ticket) => ticket.items).map((item, index) => (
+                      <div key={`${item.dishName}-${index}`}>
+                        • {item.quantity}x {item.dishName}
+                        {item.notes && <em> — {item.notes}</em>}
+                      </div>
+                    ))}
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2 pt-2">
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="w-full"
-                    leftIcon={<Receipt className="w-4 h-4" />}
-                    onClick={handleCloseAndBillTable}
-                  >
-                    Cobrar cuenta (${selectedTable.total?.toFixed(2) || '42.00'}) y liberar mesa
-                  </Button>
+                  {canCharge ? (
+                    <Button
+                      variant="primary"
+                      size="md"
+                      className="w-full"
+                      leftIcon={<Receipt className="w-4 h-4" />}
+                      onClick={handleCloseAndBillTable}
+                    >
+                      Cobrar cuenta ({formatCurrency(selectedTable.total ?? 0)}) y liberar mesa
+                    </Button>
+                  ) : selectedTable.status === 'billing' ? (
+                    <p className="text-center font-semibold text-[#A43108]">Caja ya tiene esta cuenta para cobrar.</p>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      size="md"
+                      className="w-full"
+                      leftIcon={<Receipt className="w-4 h-4" />}
+                      onClick={() => handleOccupyTable('billing')}
+                    >
+                      Pedir la cuenta a Caja
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     onClick={() => setIsDetailModalOpen(false)}

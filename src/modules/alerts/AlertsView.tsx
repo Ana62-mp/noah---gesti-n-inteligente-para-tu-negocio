@@ -5,6 +5,7 @@ import { NotificationAlert } from '../../shared/types';
 import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
 import { Modal } from '../../shared/ui/Modal';
+import { canCreateDraft, getVisibleAlerts } from '../../shared/permissions/rolePermissions';
 import {
   BellRing,
   AlertTriangle,
@@ -18,7 +19,8 @@ import {
 import confetti from 'canvas-confetti';
 
 export const AlertsView: React.FC = () => {
-  const { showToast, setActiveSection, setUnreadNotificationsCount } = useApp();
+  const { showToast, setActiveSection, setUnreadNotificationsCount, currentRole } = useApp();
+  const canCreatePromo = canCreateDraft(currentRole, 'promo');
   const [alerts, setAlerts] = useState<NotificationAlert[]>([]);
   const [selectedAlertForPromo, setSelectedAlertForPromo] = useState<NotificationAlert | null>(null);
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
@@ -34,7 +36,7 @@ export const AlertsView: React.FC = () => {
   }, []);
 
   const loadAlerts = async () => {
-    const data = await apiService.getNotifications();
+    const data = getVisibleAlerts(currentRole, await apiService.getNotifications());
     setAlerts(data);
     setUnreadNotificationsCount(data.filter((n) => !n.dismissed).length);
   };
@@ -145,7 +147,7 @@ export const AlertsView: React.FC = () => {
               {/* Action Buttons */}
               <div className="pt-2 border-t border-black/5 flex items-center justify-between">
                 <div>
-                  {alert.suggestedAction ? (
+                  {alert.suggestedAction && canCreatePromo ? (
                     <Button
                       variant={alert.severity === 'critical' ? 'primary' : 'cinnamon'}
                       size="sm"

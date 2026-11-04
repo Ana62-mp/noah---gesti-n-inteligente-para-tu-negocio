@@ -4,6 +4,7 @@ import { BUSINESS_OPTIONS, INITIAL_MODULES } from '../services/mockData';
 import { apiService } from '../services/apiService';
 import { aiService } from '../services/aiService';
 import { fetchGeminiHealth } from '../services/geminiClient';
+import { ROLE_LABELS, getDisplayName, getRoleHomeSection, getRolesForBusiness } from '../permissions/rolePermissions';
 
 export interface ToastItem {
   id: string;
@@ -112,7 +113,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (typeof window !== 'undefined' && window.location.hash) {
       return window.location.hash.replace('#', '') || 'dashboard';
     }
-    return 'dashboard';
+    return getRoleHomeSection(currentRole, currentBusiness.type);
   });
 
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
@@ -151,34 +152,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setCurrentBusiness = (b: BusinessConfig) => {
     setCurrentBusinessState(b);
     localStorage.setItem('noah_business_id', b.id);
-    // If switching to store, customize modules
-    if (b.type === 'store') {
-      setActiveSection('store');
-    } else if (b.type === 'barbershop') {
-      setActiveSection('appointments');
-    } else {
-      setActiveSection('dashboard');
+    const role = getRolesForBusiness(b.type).includes(currentRole) ? currentRole : 'owner';
+    if (role !== currentRole) {
+      setCurrentRoleState(role);
+      localStorage.setItem('noah_role', role);
     }
+    setActiveSection(getRoleHomeSection(role, b.type));
     showToast(`Cambiado a ${b.name} (${b.city})`, 'info');
   };
 
   const setCurrentRole = (r: UserRole) => {
     setCurrentRoleState(r);
     localStorage.setItem('noah_role', r);
-    const roleLabels: Record<UserRole, string> = {
-      owner: 'Dueño / Administrador',
-      cashier: 'Encargado de Caja',
-      waiter: 'Mesero (Atención Salón)',
-      kitchen: 'Cocina / Comandas',
-      inventory: 'Operador de Inventario',
-    };
-    showToast(`Vista cambiada a: ${roleLabels[r]}`, 'info');
-
-    // Auto navigate to role's primary view
-    if (r === 'kitchen') setActiveSection('kitchen');
-    else if (r === 'waiter') setActiveSection('voice_scenarios');
-    else if (r === 'cashier') setActiveSection('sales');
-    else if (r === 'inventory') setActiveSection('inventory');
+    showToast(`Vista cambiada a: ${ROLE_LABELS[r]}`, 'info');
+    setActiveSection(getRoleHomeSection(r, currentBusiness.type));
   };
 
   const loginWithDemoAccount = (
@@ -188,13 +175,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     email?: string
   ) => {
     const business = BUSINESS_OPTIONS.find((b) => b.id === businessId) || BUSINESS_OPTIONS[0];
-    const resolvedName =
-      userName ||
-      (role === 'waiter'
-        ? 'Ana Martínez (Mesera)'
-        : role === 'kitchen'
-        ? 'Wilson Quishpe (Cocina)'
-        : business.ownerName || 'Carlos Mendoza');
+    const resolvedName = userName || getDisplayName(role, business, null);
     const resolvedEmail =
       email || `${resolvedName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@noah-negocios.ec`;
 
@@ -217,17 +198,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setHasCompletedOnboardingState(true);
     localStorage.setItem('noah_onboarding_completed', 'true');
 
-    if (business.type === 'store') {
-      setActiveSection('store');
-    } else if (business.type === 'barbershop') {
-      setActiveSection('appointments');
-    } else if (role === 'kitchen') {
-      setActiveSection('kitchen');
-    } else if (role === 'waiter') {
-      setActiveSection('tables');
-    } else {
-      setActiveSection('dashboard');
-    }
+    setActiveSection(getRoleHomeSection(role, business.type));
 
     showToast(`¡Sesión iniciada con éxito! Bienvenido/a ${resolvedName}`, 'success');
   };
@@ -276,17 +247,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setHasCompletedOnboardingState(true);
     localStorage.setItem('noah_onboarding_completed', 'true');
 
-    if (selectedBusiness.type === 'store') {
-      setActiveSection('store');
-    } else if (selectedBusiness.type === 'barbershop') {
-      setActiveSection('appointments');
-    } else if (selectedRole === 'kitchen') {
-      setActiveSection('kitchen');
-    } else if (selectedRole === 'waiter') {
-      setActiveSection('tables');
-    } else {
-      setActiveSection('dashboard');
-    }
+    setActiveSection(getRoleHomeSection(selectedRole, selectedBusiness.type));
 
     showToast(`¡Bienvenido de vuelta, ${selectedName}!`, 'success');
     return true;
@@ -384,6 +345,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Guided Tour
   const startGuidedTour = () => {
+    setCurrentRoleState('owner');
+    localStorage.setItem('noah_role', 'owner');
+    setCurrentBusinessState(BUSINESS_OPTIONS[0]);
+    localStorage.setItem('noah_business_id', BUSINESS_OPTIONS[0].id);
     setGuidedTourStep(1);
     setActiveSection('dashboard');
   };

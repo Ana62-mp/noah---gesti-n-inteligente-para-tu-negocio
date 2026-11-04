@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../shared/context/AppContext';
 import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
+import { ROLE_LABELS, canAccessSection, getRolesForBusiness } from '../../shared/permissions/rolePermissions';
 import {
   Settings,
   Shield,
@@ -39,19 +40,22 @@ export const SettingsView: React.FC = () => {
   const [ruc, setRuc] = useState(currentBusiness.ruc);
   const [city, setCity] = useState(currentBusiness.city);
 
+  const matrixRoles = getRolesForBusiness('restaurant');
   const permissionsMatrix = [
-    { module: 'Dashboard y Métricas Financieras', owner: true, cashier: false, waiter: false, kitchen: false, inventory: false },
-    { module: 'Ventas y Cierre de Caja', owner: true, cashier: true, waiter: false, kitchen: false, inventory: false },
-    { module: 'Gastos, Compras y Flujo de Caja', owner: true, cashier: false, waiter: false, kitchen: false, inventory: true },
-    { module: 'Recetas, Costeo y Márgenes', owner: true, cashier: false, waiter: false, kitchen: false, inventory: false },
-    { module: 'Toma de Pedidos (Salón)', owner: true, cashier: true, waiter: true, kitchen: false, inventory: false },
-    { module: 'Tablero de Cocina / Comandas', owner: true, cashier: false, waiter: false, kitchen: true, inventory: false },
-    { module: 'Insumos, Bodega y Proveedores', owner: true, cashier: false, waiter: false, kitchen: false, inventory: true },
-    { module: 'Asistente Noah por Voz', owner: true, cashier: true, waiter: true, kitchen: true, inventory: true },
+    { module: 'Dashboard, reportes y rentabilidad', section: 'dashboard' },
+    { module: 'Ventas y cierre de caja', section: 'sales' },
+    { module: 'Gastos (dueño) y compras de insumos (inventario)', section: 'expenses' },
+    { module: 'Recetas, costeo y márgenes', section: 'costing' },
+    { module: 'Carta con precios (costos solo para el dueño)', section: 'menu' },
+    { module: 'Mesas y pedidos (cobro: dueño y caja)', section: 'tables' },
+    { module: 'Delivery y para llevar', section: 'delivery' },
+    { module: 'Tablero de cocina', section: 'kitchen' },
+    { module: 'Insumos, bodega y proveedores', section: 'inventory' },
+    { module: 'Configuración y demostración', section: 'settings' },
   ];
 
   const plannedConnectors = [
-    { name: 'Gemini 3.8 Flash (Google AI)', purpose: 'Motor conversacional de inteligencia artificial', status: 'Activo / Opcional' },
+    { name: 'Gemini (Google AI)', purpose: 'Motor conversacional de inteligencia artificial', status: 'Opcional: requiere clave' },
     { name: 'Web Speech API & Síntesis', purpose: 'Transcripción y lectura de respuestas por voz', status: 'Activo en navegador' },
     { name: 'Comandera Térmica (ESC/POS)', purpose: 'Impresión de tickets para cocina y barra', status: 'Pendiente de evaluar' },
     { name: 'WhatsApp Business API', purpose: 'Recepción de pedidos y reportes diarios al dueño', status: 'Pendiente de evaluar' },
@@ -314,7 +318,7 @@ export const SettingsView: React.FC = () => {
             </div>
             <div className="text-xs">
               <span className="text-[#6B6B6B]">Tu rol actual: </span>
-              <strong className="text-[#CF6811] capitalize font-bold">{currentRole}</strong>
+              <strong className="text-[#CF6811] font-bold">{ROLE_LABELS[currentRole]}</strong>
             </div>
           </div>
 
@@ -323,37 +327,33 @@ export const SettingsView: React.FC = () => {
               <thead className="bg-[#F5F4F1] text-[#6B6B6B] uppercase font-semibold">
                 <tr>
                   <th className="py-2.5 px-3">Módulo del sistema</th>
-                  <th className="py-2.5 px-3 text-center">Dueño</th>
-                  <th className="py-2.5 px-3 text-center">Cajero</th>
-                  <th className="py-2.5 px-3 text-center">Mesero</th>
-                  <th className="py-2.5 px-3 text-center">Cocina</th>
-                  <th className="py-2.5 px-3 text-center">Inventario</th>
+                  {matrixRoles.map((role) => (
+                    <th key={role} className="py-2.5 px-3 text-center">{ROLE_LABELS[role]}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E7E5E0]">
                 {permissionsMatrix.map((row, idx) => (
                   <tr key={idx} className="hover:bg-[#FBF6E6]/30">
                     <td className="py-2.5 px-3 font-medium text-[#111111]">{row.module}</td>
-                    <td className="py-2.5 px-3 text-center">
-                      <span className="text-[#5C5011] font-bold">✓</span>
-                    </td>
-                    <td className="py-2.5 px-3 text-center">
-                      {row.cashier ? <span className="text-[#5C5011] font-bold">✓</span> : <span className="text-[#6B6B6B]/40">—</span>}
-                    </td>
-                    <td className="py-2.5 px-3 text-center">
-                      {row.waiter ? <span className="text-[#5C5011] font-bold">✓</span> : <span className="text-[#6B6B6B]/40">—</span>}
-                    </td>
-                    <td className="py-2.5 px-3 text-center">
-                      {row.kitchen ? <span className="text-[#5C5011] font-bold">✓</span> : <span className="text-[#6B6B6B]/40">—</span>}
-                    </td>
-                    <td className="py-2.5 px-3 text-center">
-                      {row.inventory ? <span className="text-[#5C5011] font-bold">✓</span> : <span className="text-[#6B6B6B]/40">—</span>}
-                    </td>
+                    {matrixRoles.map((role) => (
+                      <td key={role} className="py-2.5 px-3 text-center">
+                        {canAccessSection(role, row.section) ? (
+                          <span className="text-[#5C5011] font-bold" aria-label="Con acceso">✓</span>
+                        ) : (
+                          <span className="text-[#6B6B6B]" aria-label="Sin acceso">—</span>
+                        )}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          <p className="text-xs text-[#6B6B6B]">
+            Noah está disponible para todos, pero solo responde lo que corresponde a cada perfil.
+            En el prototipo este control ocurre en la pantalla; en producción también debe validarse en el servidor.
+          </p>
         </div>
       )}
 

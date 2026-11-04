@@ -1018,6 +1018,7 @@ export const APPOINTMENTS_MOCK: Appointment[] = [
 export const NOTIFICATIONS_MOCK: NotificationAlert[] = [
   {
     id: 'notif-1',
+    topic: 'stock',
     severity: 'critical',
     title: 'Excedente de pollo fresco por vencer',
     message: 'Tienes 5 pollos de más (≈ 13 kg) que vencen mañana. Haz una promo 2x1 en seco de pollo hoy para que no se conviertan en merma.',
@@ -1037,6 +1038,7 @@ export const NOTIFICATIONS_MOCK: NotificationAlert[] = [
   },
   {
     id: 'notif-2',
+    topic: 'margin',
     severity: 'warning',
     title: 'Margen bajo en Ceviche de Camarón (18 %)',
     message: 'El costo del camarón subió un 15 % este mes. Tu margen actual es 18 %, por debajo del umbral mínimo del 30 %.',
@@ -1054,6 +1056,7 @@ export const NOTIFICATIONS_MOCK: NotificationAlert[] = [
   },
   {
     id: 'notif-3',
+    topic: 'stock',
     severity: 'warning',
     title: '3 kg de limón sutil por vencer en 2 días',
     message: 'Se acerca la fecha de maduración máxima. Te sugerimos preparar jarra de limonada imperial o ceviche especial.',
@@ -1063,6 +1066,7 @@ export const NOTIFICATIONS_MOCK: NotificationAlert[] = [
   },
   {
     id: 'notif-4',
+    topic: 'sales',
     severity: 'info',
     title: 'Ventas de miércoles 20 % menores',
     message: 'Históricamente los miércoles tienen menos afluencia en almuerzos. Un menú especial de mitad de semana aumentaría la rotación.',

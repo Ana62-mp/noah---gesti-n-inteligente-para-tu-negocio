@@ -20,9 +20,19 @@ import { StoreModeView } from './modules/store/StoreModeView';
 import { BarbershopView } from './modules/barbershop/BarbershopView';
 import { MobilePreviewView } from './modules/mobile-preview/MobilePreviewView';
 import { SettingsView } from './modules/settings/SettingsView';
+import { AccessDenied } from './shared/ui/AccessDenied';
+import { ROLE_LABELS, ROLE_SCOPE, canAccessSection, getRoleHomeSection } from './shared/permissions/rolePermissions';
 
 const MainContent: React.FC = () => {
-  const { isAuthenticated, isCreatingAccount, hasCompletedOnboarding, activeSection } = useApp();
+  const {
+    isAuthenticated,
+    isCreatingAccount,
+    hasCompletedOnboarding,
+    activeSection,
+    setActiveSection,
+    currentRole,
+    currentBusiness,
+  } = useApp();
 
   if (isCreatingAccount) {
     return <OnboardingWizard />;
@@ -37,6 +47,16 @@ const MainContent: React.FC = () => {
   }
 
   const renderSection = () => {
+    if (!canAccessSection(currentRole, activeSection)) {
+      return (
+        <AccessDenied
+          roleLabel={ROLE_LABELS[currentRole]}
+          roleScope={ROLE_SCOPE[currentRole]}
+          onGoHome={() => setActiveSection(getRoleHomeSection(currentRole, currentBusiness.type))}
+        />
+      );
+    }
+
     switch (activeSection) {
       case 'dashboard':
         return <OwnerDashboard />;

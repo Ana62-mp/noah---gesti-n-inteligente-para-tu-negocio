@@ -5,6 +5,7 @@ import { Dish } from '../../shared/types';
 import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
 import { formatCurrency, formatPercent } from '../../shared/utils/formatters';
+import { canEditMenu, canViewDishCosts } from '../../shared/permissions/rolePermissions';
 import {
   UtensilsCrossed,
   Calculator,
@@ -15,7 +16,9 @@ import {
 } from 'lucide-react';
 
 export const MenuView: React.FC = () => {
-  const { setActiveSection, showToast } = useApp();
+  const { setActiveSection, showToast, currentRole } = useApp();
+  const canSeeCosts = canViewDishCosts(currentRole);
+  const canEdit = canEditMenu(currentRole);
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,15 +57,19 @@ export const MenuView: React.FC = () => {
             <h2 className="text-lg font-bold text-[#111111]">Carta y Menú</h2>
           </div>
           <p className="text-xs text-[#6B6B6B]">
-            25 platos ecuatorianos con recetas costeadas, márgenes brutos y disponibilidad.
+            {canSeeCosts
+              ? '25 platos ecuatorianos con recetas costeadas, márgenes brutos y disponibilidad.'
+              : 'Platos, precios de venta y disponibilidad de hoy.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Badge variant="olive">Verde ≥ 50%</Badge>
-          <Badge variant="banana">Banana 30–50%</Badge>
-          <Badge variant="terracotta">Rojo &lt; 30%</Badge>
-        </div>
+        {canSeeCosts && (
+          <div className="flex items-center gap-2">
+            <Badge variant="olive">Verde ≥ 50%</Badge>
+            <Badge variant="banana">Banana 30–50%</Badge>
+            <Badge variant="terracotta">Rojo &lt; 30%</Badge>
+          </div>
+        )}
       </div>
 
       {/* Filter and Search Bar */}
@@ -121,16 +128,18 @@ export const MenuView: React.FC = () => {
                   <h3 className="font-display font-extrabold text-base text-[#111111]">
                     {dish.name}
                   </h3>
-                  <Badge variant={badgeVariant} size="sm">
-                    {formatPercent(dish.grossMargin, 0)}
-                  </Badge>
+                  {canSeeCosts && (
+                    <Badge variant={badgeVariant} size="sm">
+                      {formatPercent(dish.grossMargin, 0)}
+                    </Badge>
+                  )}
                 </div>
 
                 <p className="text-xs text-[#6B6B6B] line-clamp-2 leading-relaxed">
                   {dish.description}
                 </p>
 
-                {/* Price, Cost & Margin breakdown */}
+                {canSeeCosts ? (
                 <div className="bg-[#FAFAF8] p-3 rounded-xl border border-[#E7E5E0] grid grid-cols-3 gap-2 text-center text-xs">
                   <div>
                     <span className="text-[10px] text-[#6B6B6B] uppercase font-bold block">Precio</span>
@@ -151,10 +160,17 @@ export const MenuView: React.FC = () => {
                     </span>
                   </div>
                 </div>
+                ) : (
+                  <div className="bg-[#FAFAF8] p-3 rounded-xl border border-[#E7E5E0] flex items-center justify-between text-xs">
+                    <span className="text-[10px] text-[#6B6B6B] uppercase font-bold">Precio de venta</span>
+                    <span className="font-bold text-sm font-mono text-[#111111]">{formatCurrency(dish.sellingPrice)}</span>
+                  </div>
+                )}
               </div>
 
               {/* Bottom Actions */}
               <div className="pt-2 border-t border-[#E7E5E0] flex items-center justify-between">
+                {canEdit ? (
                 <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-[#6B6B6B]">
                   <input
                     type="checkbox"
@@ -164,7 +180,13 @@ export const MenuView: React.FC = () => {
                   />
                   <span>{dish.isAvailable ? 'Disponible' : 'Agotado'}</span>
                 </label>
+                ) : (
+                  <Badge variant={dish.isAvailable ? 'olive' : 'terracotta'} size="sm">
+                    {dish.isAvailable ? 'Disponible' : 'Agotado'}
+                  </Badge>
+                )}
 
+                {canSeeCosts && (
                 <button
                   onClick={() => setActiveSection('costing')}
                   className="text-xs font-semibold text-[#CF6811] hover:underline flex items-center gap-1"
@@ -172,6 +194,7 @@ export const MenuView: React.FC = () => {
                   <Calculator className="w-3.5 h-3.5" />
                   <span>Costeo</span>
                 </button>
+                )}
               </div>
             </div>
           );
