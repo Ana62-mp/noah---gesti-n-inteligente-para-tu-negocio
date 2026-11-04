@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { ArrowUpRight, ArrowDownRight, HelpCircle, Info } from 'lucide-react';
+import React from 'react';
+import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { InfoTooltip } from './InfoTooltip';
 
 export type MetricTone = 'cinnamon' | 'banana' | 'olive' | 'terracotta' | 'harvest';
 
@@ -39,14 +40,12 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   subtitle,
   tone = 'cinnamon',
 }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
-
   const isPositive = change !== undefined && change >= 0;
   const isNegative = change !== undefined && change < 0;
 
   return (
     <div
-      className={`relative rounded-2xl p-4 sm:p-5 card-lift border overflow-hidden ${
+      className={`relative rounded-2xl p-3.5 card-lift border overflow-hidden ${
         highlight
           ? 'bg-[#FBF6E6] border-[#EBD48F] shadow-sm'
           : 'bg-white border-[#E7E5E0] hover:border-[#D59F3F]/40 shadow-xs'
@@ -63,46 +62,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
               {icon}
             </span>
           )}
-          {provenance && (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowTooltip(!showTooltip)}
-                onMouseEnter={() => setShowTooltip(true)}
-                onMouseLeave={() => setShowTooltip(false)}
-                className="text-[#8A7424] hover:text-[#CF6811] p-0.5 rounded transition-colors focus:outline-none"
-                aria-label="Origen del dato"
-              >
-                <HelpCircle className="w-3.5 h-3.5" />
-              </button>
-
-              {/* Provenance Popover Tooltip */}
-              {showTooltip && (
-                <div className="absolute right-0 top-6 z-40 w-64 p-3 bg-[#421A05] text-[#FBF6E6] text-xs rounded-xl shadow-xl border border-[#D59F3F]/30 animate-in fade-in zoom-in-95">
-                  <div className="flex items-center gap-1.5 font-bold text-[#EBD48F] mb-1.5">
-                    <Info className="w-3.5 h-3.5" />
-                    <span>¿De dónde sale este dato?</span>
-                  </div>
-                  <div className="space-y-1 text-[11px] leading-tight">
-                    <p>
-                      <strong className="text-white">Período:</strong> {provenance.period}
-                    </p>
-                    <p>
-                      <strong className="text-white">Fuente:</strong> {provenance.source}
-                    </p>
-                    <p>
-                      <strong className="text-white">Actualizado:</strong> {provenance.updatedAt}
-                    </p>
-                    {provenance.details && (
-                      <p className="mt-1 pt-1 border-t border-white/10 text-white/80">
-                        {provenance.details}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {provenance && <InfoTooltip {...provenance} />}
         </div>
       </div>
 
@@ -131,7 +91,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
             ) : null}
             <span>
               {isPositive ? '+' : ''}
-              {(change * 100).toFixed(1)}%
+              {(change * 100).toFixed(1).replace('.', ',')} %
             </span>
           </div>
         )}
