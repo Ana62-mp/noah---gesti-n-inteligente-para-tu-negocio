@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { BellRing, Globe, Moon, Smartphone, Sun } from 'lucide-react';
+import { getBusinessProfile } from '../../shared/business/businessProfiles';
+import { useApp } from '../../shared/context/AppContext';
+import { BusinessType } from '../../shared/types';
 import { Badge } from '../../shared/ui/Badge';
 import { Button } from '../../shared/ui/Button';
 import { PhoneFrame, PhoneModel, PhoneTheme } from '../../shared/ui/PhoneFrame';
@@ -13,18 +16,7 @@ type Profile = 'owner' | 'waiter' | 'barber';
 const PUSH_DELAY_MS = 2500;
 const PUSH_VISIBLE_MS = 5000;
 
-const PROFILES: Record<Profile, { label: string; hint: string; push: string; pushTab: string; tryList: string[] }> = {
-  owner: {
-    label: 'Dueño',
-    hint: 'Finanzas y alertas',
-    push: 'Tienes 5 pollos de más que vencen mañana. ¿Hacemos una promo?',
-    pushTab: 'alerts',
-    tryList: [
-      'Toca el orbe: Noah responde con cifra, período y detalle.',
-      'Pide "Registra una compra por 180 dólares", confirma y míralo en Finanzas.',
-      'Abre Alertas y crea una promoción: no se publica sin tu aprobación.',
-    ],
-  },
+const STAFF_PROFILES = {
   waiter: {
     label: 'Mesero',
     hint: 'Pedidos por voz',
@@ -49,7 +41,19 @@ const PROFILES: Record<Profile, { label: string; hint: string; push: string; pus
   },
 };
 
-const PROFILE_IDS = Object.keys(PROFILES) as Profile[];
+const OWNER_PUSH: Record<BusinessType, string> = {
+  restaurant: 'Tienes 5 pollos de más que vencen mañana. ¿Hacemos una promo?',
+  store: '60 panes vencen mañana. ¿Armamos un combo de desayuno?',
+  barbershop: 'El miércoles tienes pocas citas. ¿Lanzamos una promo de barba?',
+  services: 'El miércoles tienes pocas citas. ¿Lanzamos una promoción?',
+};
+
+const getProfilesFor = (type: BusinessType): Profile[] => {
+  if (type === 'restaurant') return ['owner', 'waiter'];
+  if (type === 'store') return ['owner'];
+  return ['owner', 'barber'];
+};
+
 const MODELS: { id: PhoneModel; label: string }[] = [
   { id: 'iphone', label: 'iPhone' },
   { id: 'android', label: 'Android pequeño' },
@@ -76,7 +80,17 @@ export const MobilePreviewView: React.FC = () => {
   const [theme, setTheme] = useState<PhoneTheme>('light');
   const [isPushVisible, setIsPushVisible] = useState(false);
   const [requestedTab, setRequestedTab] = useState<{ tab: string; nonce: number } | null>(null);
-  const current = PROFILES[profile];
+  const { currentBusiness } = useApp();
+  const profileIds = getProfilesFor(currentBusiness.type);
+  const ownerProfile = {
+    label: 'Dueño',
+    hint: 'Finanzas y alertas',
+    push: OWNER_PUSH[currentBusiness.type],
+    pushTab: 'alerts',
+    tryList: getBusinessProfile(currentBusiness.type).phone.tryOwner,
+  };
+  const getProfile = (id: Profile) => (id === 'owner' ? ownerProfile : STAFF_PROFILES[id]);
+  const current = getProfile(profile);
 
   useEffect(() => {
     setIsPushVisible(false);
@@ -101,18 +115,9 @@ export const MobilePreviewView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-        <div>
-          <div className="flex items-center gap-2">
-            <Smartphone className="w-5 h-5 text-[#CF6811]" />
-            <h2 className="text-lg font-bold text-[#111111]">Cómo se vería en el celular</h2>
-            <Badge variant="harvest" size="sm">Simulación · datos de ejemplo</Badge>
-          </div>
-          <p className="text-xs text-[#6B6B6B]">
-            Navega el celular como en una app real. Lo que confirmes aquí aparece también en la versión web.
-          </p>
-        </div>
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Badge variant="harvest" size="sm">Simulación · datos de ejemplo. Lo que confirmes aquí aparece en la versión web.</Badge>
         <div className="flex items-center gap-2 shrink-0">
           <Button variant="secondary" size="sm" leftIcon={<BellRing className="w-3.5 h-3.5 text-[#CF6811]" />} onClick={() => setIsPushVisible(true)}>
             Enviar notificación
@@ -128,12 +133,12 @@ export const MobilePreviewView: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
         <div className="lg:col-span-6 xl:col-span-5 space-y-4">
           <div className="bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)] space-y-2.5">
             <h3 className="text-xs font-bold text-[#421A05] uppercase tracking-wide">Perfil en el celular</h3>
-            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Perfil en el celular">
-              {PROFILE_IDS.map((id) => (
+            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Perfil en el celular">
+              {profileIds.map((id) => (
                 <button
                   key={id}
                   role="radio"
@@ -143,8 +148,8 @@ export const MobilePreviewView: React.FC = () => {
                     profile === id ? 'gradient-brand text-white border-transparent shadow-md' : 'bg-white border-[#E7E5E0] hover:bg-[#FBF6E6]'
                   }`}
                 >
-                  <div className="font-bold text-xs">{PROFILES[id].label}</div>
-                  <div className={`text-[10px] ${profile === id ? 'text-white/90' : 'text-[#6B6B6B]'}`}>{PROFILES[id].hint}</div>
+                  <div className="font-bold text-xs">{getProfile(id).label}</div>
+                  <div className={`text-[10px] ${profile === id ? 'text-white/90' : 'text-[#6B6B6B]'}`}>{getProfile(id).hint}</div>
                 </button>
               ))}
             </div>

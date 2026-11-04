@@ -54,6 +54,12 @@ export const OwnerAlerts: React.FC<OwnerAlertsProps> = ({ onChanged, onAsk }) =>
 
   const savePromo = async () => {
     if (!promoAlert) return;
+    await apiService.addPromotion({
+      title: promoName,
+      item: promoAlert.suggestedAction?.payload?.dishName ?? 'Por definir',
+      discount: promoAlert.suggestedAction?.payload?.discountType ?? 'Por definir',
+      duration: promoDuration,
+    });
     await apiService.dismissNotification(promoAlert.id);
     setPromoAlert(null);
     confetti({ particleCount: 30, spread: 50 });

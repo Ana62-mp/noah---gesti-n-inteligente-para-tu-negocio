@@ -1,35 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { apiService } from '../../../shared/services/apiService';
-import { DISHES_MOCK } from '../../../shared/services/mockData';
+import { getBusinessProfile } from '../../../shared/business/businessProfiles';
+import { useApp } from '../../../shared/context/AppContext';
 import { Expense } from '../../../shared/types';
 import { ErrorState } from '../../../shared/ui/ErrorState';
 import { getErrorMessage } from '../../../shared/utils/errors';
 import { formatCurrency } from '../../../shared/utils/formatters';
 import { PhoneHeader } from '../components/PhoneChrome';
 
-type Period = 'today' | 'week' | 'month';
-
-const PERIODS: { id: Period; label: string; income: number; outcome: number; note: string }[] = [
-  { id: 'today', label: 'Hoy', income: 780.5, outcome: 145, note: 'Martes 03/11, hasta las 14:30' },
-  { id: 'week', label: 'Semana', income: 2140, outcome: 565, note: 'Lunes y martes (semana 45)' },
-  { id: 'month', label: 'Octubre', income: 15400, outcome: 12450, note: 'Mes cerrado, antes de impuestos' },
-];
-
-const WEEK_BARS = [
-  { day: 'L', current: 1360, previous: 1190 },
-  { day: 'M', current: 780, previous: 770 },
-];
-
-const BAR_SCALE_MAX = 1500;
 const RECENT_EXPENSES = 3;
-const LOW_MARGIN_DISHES = 3;
+const LOW_MARGIN_ITEMS = 3;
 
 export const OwnerFinance: React.FC = () => {
-  const [periodId, setPeriodId] = useState<Period>('today');
+  const { currentBusiness } = useApp();
+  const { phone, reports } = getBusinessProfile(currentBusiness.type);
+  const [periodId, setPeriodId] = useState(phone.periods[0].id);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const period = PERIODS.find(({ id }) => id === periodId) ?? PERIODS[0];
-  const lowMarginDishes = [...DISHES_MOCK].sort((a, b) => a.grossMargin - b.grossMargin).slice(0, LOW_MARGIN_DISHES);
+  const period = phone.periods.find(({ id }) => id === periodId) ?? phone.periods[0];
+  const barScaleMax = Math.max(...phone.weekBars.flatMap(({ current, previous }) => [current, previous]), 1);
+  const lowMarginItems = [...reports.ranking].sort((a, b) => a.margin - b.margin).slice(0, LOW_MARGIN_ITEMS);
 
   const loadExpenses = async () => {
     setError(null);
@@ -50,7 +40,7 @@ export const OwnerFinance: React.FC = () => {
       <PhoneHeader eyebrow="Solo dueño" title="Finanzas" />
 
       <div className="ph-chip flex p-0.5 rounded-xl" role="tablist" aria-label="Período">
-        {PERIODS.map(({ id, label }) => (
+        {phone.periods.map(({ id, label }) => (
           <button
             key={id}
             role="tab"
@@ -81,12 +71,12 @@ export const OwnerFinance: React.FC = () => {
 
       <div className="ph-card p-3 space-y-2">
         <div className="font-bold text-xs">Esta semana vs. la anterior</div>
-        {WEEK_BARS.map(({ day, current, previous }) => (
+        {phone.weekBars.map(({ day, current, previous }) => (
           <div key={day} className="flex items-center gap-2 text-[10px]">
             <span className="w-3 font-bold">{day}</span>
             <div className="flex-1 space-y-0.5">
-              <div className="h-2 rounded-full bg-[#CF6811]" style={{ width: `${(current / BAR_SCALE_MAX) * 100}%` }} />
-              <div className="h-2 rounded-full bg-[#D59F3F]/60" style={{ width: `${(previous / BAR_SCALE_MAX) * 100}%` }} />
+              <div className="h-2 rounded-full bg-[#CF6811]" style={{ width: `${(current / barScaleMax) * 100}%` }} />
+              <div className="h-2 rounded-full bg-[#8C8479]" style={{ width: `${(previous / barScaleMax) * 100}%` }} />
             </div>
             <span className="tabular-nums font-bold">{formatCurrency(current)}</span>
           </div>
@@ -94,11 +84,11 @@ export const OwnerFinance: React.FC = () => {
       </div>
 
       <div className="ph-card p-3 space-y-1.5">
-        <div className="font-bold text-xs">Platos con menor margen</div>
-        {lowMarginDishes.map((dish) => (
-          <div key={dish.id} className="flex justify-between gap-2 text-[11px]">
-            <span className="truncate">{dish.name}</span>
-            <strong className="tabular-nums shrink-0">{Math.round(dish.grossMargin * 100)} %</strong>
+        <div className="font-bold text-xs">{phone.rankingTitle}</div>
+        {lowMarginItems.map(({ name, margin }) => (
+          <div key={name} className="flex justify-between gap-2 text-[11px]">
+            <span className="truncate">{name}</span>
+            <strong className="tabular-nums shrink-0">{Math.round(margin * 100)} %</strong>
           </div>
         ))}
       </div>

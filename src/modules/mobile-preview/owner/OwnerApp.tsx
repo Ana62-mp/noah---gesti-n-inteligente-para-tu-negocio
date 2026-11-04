@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BellRing, Home, MoreHorizontal, Sparkles, Wallet } from 'lucide-react';
 import { apiService } from '../../../shared/services/apiService';
-import { BUSINESS_OPTIONS } from '../../../shared/services/mockData';
+import { useApp } from '../../../shared/context/AppContext';
 import { PhoneAssistant } from '../components/PhoneAssistant';
 import { PhoneTab, PhoneTabBar } from '../components/PhoneChrome';
 import { OwnerAlerts } from './OwnerAlerts';
@@ -11,10 +11,10 @@ import { OwnerMore } from './OwnerMore';
 
 export type OwnerTab = 'home' | 'noah' | 'finance' | 'alerts' | 'more';
 
-const [RESTAURANT] = BUSINESS_OPTIONS;
 const ICON = 'w-5 h-5';
 
 export const OwnerApp: React.FC<{ requestedTab: { tab: string; nonce: number } | null }> = ({ requestedTab }) => {
+  const { currentBusiness } = useApp();
   const [tab, setTab] = useState<OwnerTab>('home');
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
   const [alertCount, setAlertCount] = useState(0);
@@ -52,7 +52,7 @@ export const OwnerApp: React.FC<{ requestedTab: { tab: string; nonce: number } |
         <div className={tab === 'noah' ? 'flex-1 min-h-0 flex flex-col' : 'hidden'}>
           <PhoneAssistant
             role="owner"
-            business={RESTAURANT}
+            business={currentBusiness}
             pendingQuestion={pendingQuestion}
             onQuestionHandled={() => setPendingQuestion(null)}
           />
