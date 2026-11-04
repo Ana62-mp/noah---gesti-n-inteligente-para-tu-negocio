@@ -1,0 +1,6 @@
+{
+  "name": "NOAH - Gestión inteligente para tu negocio",
+  "description": "Plataforma de gestión para negocios gastronómicos, tiendas y servicios con asistente de IA por voz Noah.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
