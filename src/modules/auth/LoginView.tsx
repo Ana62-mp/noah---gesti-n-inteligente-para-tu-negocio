@@ -172,7 +172,7 @@ export const LoginView: React.FC = () => {
                     <span>Ingresar directamente como:</span>
                   </div>
                   <button
-                    onClick={() => handleQuickLogin('sazon_carlos', 'owner', 'Carlos Mendoza')}
+                    onClick={() => handleQuickLogin('rest-sazon', 'owner', 'Carlos Mendoza')}
                     disabled={isLoading}
                     className="w-full text-left px-3.5 py-2.5 text-xs font-bold rounded-xl bg-[#FBF6E6] hover:bg-[#F5EDD1] text-[#421A05] border border-[#EBD48F] flex items-center justify-between group/btn transition-all shadow-2xs"
                   >
@@ -181,7 +181,7 @@ export const LoginView: React.FC = () => {
                   </button>
                   <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => handleQuickLogin('sazon_carlos', 'waiter', 'Ana Martínez')}
+                      onClick={() => handleQuickLogin('rest-sazon', 'waiter', 'Ana Martínez')}
                       disabled={isLoading}
                       className="px-2.5 py-2 text-[11px] font-bold rounded-xl bg-[#F5F4F1] hover:bg-[#E7E5E0] text-[#421A05] border border-[#E7E5E0] text-center transition-colors truncate"
                       title="Entrar como Mesera"
@@ -189,7 +189,7 @@ export const LoginView: React.FC = () => {
                       🍽️ Mesera (Ana)
                     </button>
                     <button
-                      onClick={() => handleQuickLogin('sazon_carlos', 'kitchen', 'Wilson Quishpe')}
+                      onClick={() => handleQuickLogin('rest-sazon', 'kitchen', 'Wilson Quishpe')}
                       disabled={isLoading}
                       className="px-2.5 py-2 text-[11px] font-bold rounded-xl bg-[#F5F4F1] hover:bg-[#E7E5E0] text-[#421A05] border border-[#E7E5E0] text-center transition-colors truncate"
                       title="Entrar como Jefe de Cocina"
@@ -243,7 +243,7 @@ export const LoginView: React.FC = () => {
                     <span>Ingresar directamente como:</span>
                   </div>
                   <button
-                    onClick={() => handleQuickLogin('tienda_dona_rosa', 'owner', 'Rosa Pillajo')}
+                    onClick={() => handleQuickLogin('store-dona-rosa', 'owner', 'Rosa Pillajo')}
                     disabled={isLoading}
                     className="w-full text-left px-3.5 py-2.5 text-xs font-bold rounded-xl bg-[#FBF6E6] hover:bg-[#F5EDD1] text-[#421A05] border border-[#EBD48F] flex items-center justify-between group/btn transition-all shadow-2xs"
                   >
@@ -299,7 +299,7 @@ export const LoginView: React.FC = () => {
                     <span>Ingresar directamente como:</span>
                   </div>
                   <button
-                    onClick={() => handleQuickLogin('barber_kings', 'owner', 'Mateo Andrade')}
+                    onClick={() => handleQuickLogin('barber-kings', 'owner', 'Mateo Andrade')}
                     disabled={isLoading}
                     className="w-full text-left px-3.5 py-2.5 text-xs font-bold rounded-xl bg-[#FBF6E6] hover:bg-[#F5EDD1] text-[#421A05] border border-[#EBD48F] flex items-center justify-between group/btn transition-all shadow-2xs"
                   >
