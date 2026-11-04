@@ -2,6 +2,8 @@
 
 Prototipo navegable de una plataforma de gestión para restaurantes, tiendas y barberías, con el asistente de voz y texto "Noah". Todos los datos son de ejemplo.
 
+leer "RECOMENDACIONES-GENERALES.md"
+
 ## Ejecutar en local
 
 ```
