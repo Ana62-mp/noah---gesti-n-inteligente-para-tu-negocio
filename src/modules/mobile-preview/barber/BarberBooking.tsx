@@ -3,7 +3,6 @@ import { AlertTriangle, CheckCircle2, Mic } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useApp } from '../../../shared/context/AppContext';
 import { apiService } from '../../../shared/services/apiService';
-import { BARBER_SERVICES_MOCK } from '../../../shared/services/mockData';
 import { speechService } from '../../../shared/services/speechService';
 import { Appointment, BarberService } from '../../../shared/types';
 import { Button } from '../../../shared/ui/Button';
@@ -33,7 +32,7 @@ export const BarberBooking: React.FC<BarberBookingProps> = ({ presetService, onS
   const [customer, setCustomer] = useState('Luis');
   const [time, setTime] = useState(SPOKEN_TIME);
   const [serviceId, setServiceId] = useState(presetService?.id ?? SPOKEN_SERVICE_ID);
-  const service = BARBER_SERVICES_MOCK.find(({ id }) => id === serviceId) ?? BARBER_SERVICES_MOCK[0];
+  const service = apiService.listServices().filter((item) => item.isActive).find(({ id }) => id === serviceId) ?? apiService.listServices().filter((item) => item.isActive)[0];
   const slot = { barberName: BARBER_NAME, date: AGENDA_DATE, time, durationMinutes: service.durationMinutes };
   const hasConflict = hasAppointmentOverlap(appointments, slot);
 
@@ -107,7 +106,7 @@ export const BarberBooking: React.FC<BarberBookingProps> = ({ presetService, onS
           <label className="block text-[11px] font-bold">
             Servicio
             <select value={serviceId} onChange={(event) => setServiceId(event.target.value)} className="ph-input mt-1 w-full h-10 rounded-xl px-2 text-xs font-normal">
-              {BARBER_SERVICES_MOCK.map(({ id, name, price }) => (
+              {apiService.listServices().filter((item) => item.isActive).map(({ id, name, price }) => (
                 <option key={id} value={id}>{name} ({formatCurrency(price)})</option>
               ))}
             </select>

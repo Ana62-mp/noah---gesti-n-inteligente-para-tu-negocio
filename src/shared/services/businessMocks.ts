@@ -1,4 +1,4 @@
-import { Customer, Expense, Ingredient, NotificationAlert, Product, Promotion, Sale, Supplier, TeamMember } from '../types';
+import { Expense, Ingredient, NotificationAlert, Product, Promotion, Sale, Supplier, TeamMember } from '../types';
 import { buildMember } from '../permissions/rolePermissions';
 
 const TODAY = '2026-11-03';
@@ -174,28 +174,8 @@ export const BARBER_ALERTS: NotificationAlert[] = [
   alert('bk-a4', 'margin', 'info', 'El combo es tu servicio más rentable', 'El Combo Corte + Barba deja $6,80 por turno. Ofrécelo al agendar.', 'RN-03 · Ranking de margen', 'Ayer, 20:00'),
 ];
 
-export const RESTAURANT_CUSTOMERS: Customer[] = [
-  { id: 'c-1', name: 'Dra. María Elena Vinueza', phone: '099 881 2233', lastVisit: '2026-11-03', visits: 18, totalSpent: 412.5, balanceDue: 0 },
-  { id: 'c-2', name: 'Gabriel Pazmiño', phone: '098 712 9900', lastVisit: '2026-11-02', visits: 9, totalSpent: 187, balanceDue: 0 },
-  { id: 'c-3', name: 'Sofía Carrión', phone: '095 441 7890', lastVisit: '2026-10-30', visits: 6, totalSpent: 124.5, balanceDue: 0 },
-  { id: 'c-4', name: 'Oficina Andes Consulting', phone: '02 245 8811', lastVisit: '2026-10-29', visits: 24, totalSpent: 1180, balanceDue: 86.5 },
-];
 
-export const STORE_CUSTOMERS: Customer[] = [
-  { id: 's-1', name: 'Vecina Lourdes', phone: '099 111 2020', lastVisit: '2026-11-03', visits: 42, totalSpent: 318, balanceDue: 24.5 },
-  { id: 's-2', name: 'Don Hugo', phone: '098 222 3030', lastVisit: '2026-11-03', visits: 37, totalSpent: 276, balanceDue: 58 },
-  { id: 's-3', name: 'Señora Marlene', phone: '097 333 4040', lastVisit: '2026-11-02', visits: 29, totalSpent: 212, balanceDue: 0 },
-  { id: 's-4', name: 'Tía Carmita', phone: '096 444 5050', lastVisit: '2026-11-01', visits: 21, totalSpent: 158, balanceDue: 31.5 },
-  { id: 's-5', name: 'Joselito (tricimoto)', phone: '095 555 6060', lastVisit: '2026-10-31', visits: 16, totalSpent: 96, balanceDue: 28 },
-  { id: 's-6', name: 'Escuelita Urdesa', phone: '04 238 1100', lastVisit: '2026-10-30', visits: 12, totalSpent: 410, balanceDue: 0 },
-];
 
-export const BARBER_CUSTOMERS: Customer[] = [
-  { id: 'b-1', name: 'Santiago Proaño', phone: '098 111 2233', lastVisit: '2026-11-03', visits: 14, totalSpent: 112, balanceDue: 0 },
-  { id: 'b-2', name: 'Andrés Viteri', phone: '099 333 4455', lastVisit: '2026-11-03', visits: 9, totalSpent: 90, balanceDue: 0 },
-  { id: 'b-3', name: 'Fernando Noboa', phone: '097 555 6677', lastVisit: '2026-11-03', visits: 21, totalSpent: 126, balanceDue: 0 },
-  { id: 'b-4', name: 'Luis Paredes', phone: '098 765 1122', lastVisit: '2026-10-20', visits: 6, totalSpent: 60, balanceDue: 10 },
-];
 
 export const STORE_PRODUCTS: Product[] = [
   ['Coca-Cola 1,35 L', 'Bebidas', 1.5, 86], ['Agua Tesalia 1 L', 'Bebidas', 0.75, 40], ['Jugo Pulp 500 ml', 'Bebidas', 0.8, 32],
@@ -206,8 +186,10 @@ export const STORE_PRODUCTS: Product[] = [
 ].map(([name, category, price, stockCount], index) => ({
   id: `prod-${index + 1}`,
   name: String(name),
+  sku: `${String(category).slice(0, 3).toUpperCase()}-${String(index + 1).padStart(3, '0')}`,
   category: String(category),
   price: Number(price),
+  costPrice: Number((Number(price) * 0.74).toFixed(2)),
   stock: Number(stockCount),
   isAvailable: Number(stockCount) > 0,
 }));

@@ -43,6 +43,14 @@ export interface Customer {
   id: string;
   name: string;
   phone: string;
+  email: string;
+  documentId: string;
+  address: string;
+  city: string;
+  birthday: string;
+  notes: string;
+  marketingOptIn: boolean;
+  createdAt: string;
   lastVisit: string;
   visits: number;
   totalSpent: number;
@@ -52,8 +60,10 @@ export interface Customer {
 export interface Product {
   id: string;
   name: string;
+  sku: string;
   category: string;
   price: number;
+  costPrice: number;
   stock: number;
   isAvailable: boolean;
 }
@@ -238,9 +248,12 @@ export interface DeliveryOrder {
 export interface BarberService {
   id: string;
   name: string;
+  category: string;
   durationMinutes: number;
   price: number;
   description: string;
+  isActive: boolean;
+  bookingsThisMonth: number;
 }
 
 export interface Appointment {

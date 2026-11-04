@@ -787,12 +787,7 @@ export const DELIVERY_ORDERS_MOCK: DeliveryOrder[] = [
   },
 ];
 
-export const BARBER_SERVICES_MOCK: BarberService[] = [
-  { id: 'bs-1', name: 'Corte clásico', durationMinutes: 30, price: 6.00, description: 'Corte a tijera o máquina con lavado y peinado.' },
-  { id: 'bs-2', name: 'Fade moderno / Degradado', durationMinutes: 45, price: 8.00, description: 'Degradado skin fade al ras con acabado navaja.' },
-  { id: 'bs-3', name: 'Perfilado y toalla caliente de barba', durationMinutes: 20, price: 4.00, description: 'Diseño de barba con vapor ozono y toalla caliente.' },
-  { id: 'bs-4', name: 'Combo Corte + Barba spa', durationMinutes: 60, price: 10.00, description: 'Servicio completo de corte fade y perfilado de barba con mascarilla.' },
-];
+export { SERVICES_SEED as BARBER_SERVICES_MOCK } from './catalogMocks';
 
 export const APPOINTMENTS_MOCK: Appointment[] = [
   {

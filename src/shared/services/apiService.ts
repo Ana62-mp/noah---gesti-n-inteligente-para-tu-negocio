@@ -9,6 +9,7 @@ import {
   DeliveryOrder,
   Appointment,
   NotificationAlert,
+  BarberService,
   BusinessType,
   Customer,
   Product,
@@ -28,21 +29,42 @@ import {
 } from './mockData';
 import {
   BARBER_ALERTS,
-  BARBER_CUSTOMERS,
   BARBER_EXPENSES,
   BARBER_SALES,
   BARBER_STOCK,
   BARBER_SUPPLIERS,
   PROMOTIONS_SEED,
-  RESTAURANT_CUSTOMERS,
   STORE_ALERTS,
-  STORE_CUSTOMERS,
   STORE_EXPENSES,
   STORE_PRODUCTS,
   STORE_SALES,
   STORE_STOCK,
   STORE_SUPPLIERS,
 } from './businessMocks';
+import { BARBER_CUSTOMERS, RESTAURANT_CUSTOMERS, STORE_CUSTOMERS } from './customerMocks';
+import {
+  EXTRA_BARBER_ALERTS,
+  EXTRA_BARBER_STOCK,
+  EXTRA_BARBER_SUPPLIERS,
+  EXTRA_PROMOTIONS,
+  EXTRA_STORE_ALERTS,
+  EXTRA_STORE_PRODUCTS,
+  EXTRA_STORE_STOCK,
+  EXTRA_STORE_SUPPLIERS,
+  SERVICES_SEED,
+} from './catalogMocks';
+
+export type CollectionName =
+  | 'customers'
+  | 'products'
+  | 'promotions'
+  | 'suppliers'
+  | 'services'
+  | 'dishes'
+  | 'ingredients'
+  | 'expenses'
+  | 'sales'
+  | 'appointments';
 
 type DatasetKey = 'restaurant' | 'store' | 'barbershop';
 
@@ -80,6 +102,7 @@ class ApiService {
   private datasets!: Record<DatasetKey, BusinessDataset>;
   private activeDataset: DatasetKey = 'restaurant';
   private products: Product[] = [];
+  private services: BarberService[] = [];
   private dishes: Dish[] = [];
   private tables: TableItem[] = [];
   private kitchenTickets: KitchenTicket[] = [];
@@ -103,6 +126,41 @@ class ApiService {
   private get customers() { return this.data.customers; }
   private get promotions() { return this.data.promotions; }
 
+  public getCollection(name: CollectionName): { id: string }[] {
+    const collections: Record<CollectionName, { id: string }[]> = {
+      customers: this.customers,
+      products: this.products,
+      promotions: this.promotions,
+      suppliers: this.suppliers,
+      services: this.services,
+      dishes: this.dishes,
+      ingredients: this.ingredients,
+      expenses: this.expenses,
+      sales: this.sales,
+      appointments: this.appointments,
+    };
+    return collections[name];
+  }
+
+  public listServices(): BarberService[] {
+    return this.services;
+  }
+
+  public async getServicesPage(params: PaginationParams = {}): Promise<PaginatedResult<BarberService>> {
+    await this.delay(200);
+    if (this.simulateError) throw new Error('No se pudo cargar el catálogo de servicios.');
+    const term = params.search?.toLowerCase() ?? '';
+    const list = this.simulateEmpty
+      ? []
+      : this.services.filter(
+          (item) =>
+            (!params.filter || params.filter === 'all' || item.category === params.filter) &&
+            (!params.extras?.status || (params.extras.status === 'active' ? item.isActive : !item.isActive)) &&
+            (!term || item.name.toLowerCase().includes(term) || item.description.toLowerCase().includes(term))
+        );
+    return this.paginate(list, params);
+  }
+
   public setActiveBusiness(type: BusinessType) {
     this.activeDataset = type === 'restaurant' || type === 'store' ? type : 'barbershop';
   }
@@ -116,28 +174,29 @@ class ApiService {
         suppliers: clone(SUPPLIERS_MOCK),
         notifications: clone(NOTIFICATIONS_MOCK),
         customers: clone(RESTAURANT_CUSTOMERS),
-        promotions: clone(PROMOTIONS_SEED.restaurant),
+        promotions: clone([...PROMOTIONS_SEED.restaurant, ...EXTRA_PROMOTIONS.restaurant]),
       },
       store: {
         sales: STORE_SALES(),
         expenses: STORE_EXPENSES(),
-        ingredients: clone(STORE_STOCK),
-        suppliers: clone(STORE_SUPPLIERS),
-        notifications: clone(STORE_ALERTS),
+        ingredients: clone([...STORE_STOCK, ...EXTRA_STORE_STOCK]),
+        suppliers: clone([...STORE_SUPPLIERS, ...EXTRA_STORE_SUPPLIERS]),
+        notifications: clone([...STORE_ALERTS, ...EXTRA_STORE_ALERTS]),
         customers: clone(STORE_CUSTOMERS),
-        promotions: clone(PROMOTIONS_SEED.store),
+        promotions: clone([...PROMOTIONS_SEED.store, ...EXTRA_PROMOTIONS.store]),
       },
       barbershop: {
         sales: BARBER_SALES(),
         expenses: BARBER_EXPENSES(),
-        ingredients: clone(BARBER_STOCK),
-        suppliers: clone(BARBER_SUPPLIERS),
-        notifications: clone(BARBER_ALERTS),
+        ingredients: clone([...BARBER_STOCK, ...EXTRA_BARBER_STOCK]),
+        suppliers: clone([...BARBER_SUPPLIERS, ...EXTRA_BARBER_SUPPLIERS]),
+        notifications: clone([...BARBER_ALERTS, ...EXTRA_BARBER_ALERTS]),
         customers: clone(BARBER_CUSTOMERS),
-        promotions: clone(PROMOTIONS_SEED.barbershop),
+        promotions: clone([...PROMOTIONS_SEED.barbershop, ...EXTRA_PROMOTIONS.barbershop]),
       },
     };
-    this.products = clone(STORE_PRODUCTS);
+    this.products = clone([...STORE_PRODUCTS, ...EXTRA_STORE_PRODUCTS]);
+    this.services = clone(SERVICES_SEED);
     this.dishes = clone(DISHES_MOCK);
     this.tables = clone(TABLES_MOCK);
     this.kitchenTickets = clone(KITCHEN_TICKETS_MOCK);
@@ -173,7 +232,12 @@ class ApiService {
     await this.delay(200);
     if (this.simulateError) throw new Error('No se pudo cargar la lista de clientes.');
     const term = params.search?.toLowerCase() ?? '';
-    let list = this.simulateEmpty ? [] : this.customers.filter((customer) => !term || customer.name.toLowerCase().includes(term));
+    let list = this.simulateEmpty
+      ? []
+      : this.customers.filter(
+          (customer) =>
+            !term || [customer.name, customer.documentId, customer.phone, customer.email].some((field) => field.toLowerCase().includes(term))
+        );
     if (params.filter === 'owing') list = list.filter((customer) => customer.balanceDue > 0);
     if (params.extras?.frequency === 'frequent') list = list.filter((customer) => customer.visits >= 15);
     if (params.extras?.frequency === 'occasional') list = list.filter((customer) => customer.visits < 15);
