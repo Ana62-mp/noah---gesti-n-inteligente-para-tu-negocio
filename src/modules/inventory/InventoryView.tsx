@@ -1,3 +1,4 @@
+import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
@@ -17,6 +18,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+type MovementType = 'entry' | 'consumption' | 'adjustment' | 'waste';
+
 export const InventoryView: React.FC = () => {
   const { showToast, setActiveSection } = useApp();
   const [activeTab, setActiveTab] = useState<'stock' | 'movements' | 'expirations'>('stock');
@@ -34,11 +37,12 @@ export const InventoryView: React.FC = () => {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Movement Form
   const [selectedIngId, setSelectedIngId] = useState('');
-  const [movementType, setMovementType] = useState<'entry' | 'consumption' | 'adjustment' | 'waste'>('entry');
+  const [movementType, setMovementType] = useState<MovementType>('entry');
   const [movementAmount, setMovementAmount] = useState(5);
   const [movementNotes, setMovementNotes] = useState('');
 
@@ -48,6 +52,7 @@ export const InventoryView: React.FC = () => {
 
   const loadIngredients = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       let activeFilter = filter;
       if (activeTab === 'expirations') {
@@ -63,8 +68,8 @@ export const InventoryView: React.FC = () => {
       if (res.items.length > 0 && !selectedIngId) {
         setSelectedIngId(res.items[0].id);
       }
-    } catch (e: any) {
-      showToast(e.message, 'error');
+    } catch (e) {
+      setLoadError(getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -264,6 +269,8 @@ export const InventoryView: React.FC = () => {
           setPage(1);
         }}
         isLoading={isLoading}
+            error={loadError}
+            onRetry={loadIngredients}
         rowKey={(i) => i.id}
       />
 
@@ -296,7 +303,7 @@ export const InventoryView: React.FC = () => {
               <label className="font-semibold text-[#111111] block mb-1">Tipo de movimiento:</label>
               <select
                 value={movementType}
-                onChange={(e) => setMovementType(e.target.value as any)}
+                onChange={(e) => setMovementType(e.target.value as MovementType)}
                 className="w-full border border-[#E7E5E0] rounded-xl p-2.5 text-xs text-[#111111] bg-[#F5F4F1]"
               >
                 <option value="entry">Entrada / Compra (+)</option>

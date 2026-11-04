@@ -1,3 +1,4 @@
+import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
@@ -32,6 +33,7 @@ export const SuppliersView: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
 
   useEffect(() => {
@@ -40,11 +42,12 @@ export const SuppliersView: React.FC = () => {
 
   const loadSuppliers = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const res = await apiService.getSuppliers({ page, pageSize, search });
       setSuppliersResult(res);
-    } catch (e: any) {
-      showToast(e.message, 'error');
+    } catch (e) {
+      setLoadError(getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -162,6 +165,8 @@ export const SuppliersView: React.FC = () => {
           setPage(1);
         }}
         isLoading={isLoading}
+            error={loadError}
+            onRetry={loadSuppliers}
         rowKey={(s) => s.id}
         onRowClick={(s) => setSelectedSupplier(s)}
       />

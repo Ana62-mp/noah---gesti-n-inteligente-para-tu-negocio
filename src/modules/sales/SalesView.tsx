@@ -1,3 +1,4 @@
+import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
@@ -35,6 +36,7 @@ export const SalesView: React.FC = () => {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // New sale form
@@ -51,11 +53,12 @@ export const SalesView: React.FC = () => {
 
   const loadSales = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const res = await apiService.getSales({ page, pageSize, filter, search });
       setSalesResult(res);
-    } catch (e: any) {
-      showToast(e.message, 'error');
+    } catch (e) {
+      setLoadError(getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -290,6 +293,8 @@ export const SalesView: React.FC = () => {
               setPage(1);
             }}
             isLoading={isLoading}
+            error={loadError}
+            onRetry={loadSales}
             rowKey={(s) => s.id}
           />
         </>
@@ -396,7 +401,7 @@ export const SalesView: React.FC = () => {
               <label className="font-semibold text-[#111111] block mb-1">Canal:</label>
               <select
                 value={newSaleChannel}
-                onChange={(e) => setNewSaleChannel(e.target.value as any)}
+                onChange={(e) => setNewSaleChannel(e.target.value as Sale['channel'])}
                 className="w-full border border-[#E7E5E0] rounded-xl p-2.5 text-xs text-[#111111] bg-[#F5F4F1]"
               >
                 <option value="salon">Salón</option>
@@ -408,7 +413,7 @@ export const SalesView: React.FC = () => {
               <label className="font-semibold text-[#111111] block mb-1">Método de pago:</label>
               <select
                 value={newSaleMethod}
-                onChange={(e) => setNewSaleMethod(e.target.value as any)}
+                onChange={(e) => setNewSaleMethod(e.target.value as Sale['paymentMethod'])}
                 className="w-full border border-[#E7E5E0] rounded-xl p-2.5 text-xs text-[#111111] bg-[#F5F4F1]"
               >
                 <option value="cash">Efectivo</option>

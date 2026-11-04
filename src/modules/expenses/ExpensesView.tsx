@@ -1,3 +1,4 @@
+import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
@@ -35,6 +36,7 @@ export const ExpensesView: React.FC = () => {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // New expense form
@@ -51,11 +53,12 @@ export const ExpensesView: React.FC = () => {
 
   const loadExpenses = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const res = await apiService.getExpenses({ page, pageSize, filter, search });
       setExpensesResult(res);
-    } catch (e: any) {
-      showToast(e.message, 'error');
+    } catch (e) {
+      setLoadError(getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -288,6 +291,8 @@ export const ExpensesView: React.FC = () => {
               setPage(1);
             }}
             isLoading={isLoading}
+            error={loadError}
+            onRetry={loadExpenses}
             rowKey={(e) => e.id}
           />
         </>
@@ -401,7 +406,7 @@ export const ExpensesView: React.FC = () => {
               <label className="font-semibold text-[#111111] block mb-1">Categoría:</label>
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value as any)}
+                onChange={(e) => setCategory(e.target.value as Expense['category'])}
                 className="w-full border border-[#E7E5E0] rounded-xl p-2.5 text-xs text-[#111111] bg-[#F5F4F1]"
               >
                 <option value="insumos">Insumos y alimentos</option>
@@ -427,7 +432,7 @@ export const ExpensesView: React.FC = () => {
               <label className="font-semibold text-[#111111] block mb-1">Método de pago:</label>
               <select
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as any)}
+                onChange={(e) => setPaymentMethod(e.target.value as Expense['paymentMethod'])}
                 className="w-full border border-[#E7E5E0] rounded-xl p-2.5 text-xs text-[#111111] bg-[#F5F4F1]"
               >
                 <option value="cash">Efectivo caja chica</option>

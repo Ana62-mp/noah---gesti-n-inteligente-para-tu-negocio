@@ -2,6 +2,7 @@ import React from 'react';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { SkeletonLoader } from './SkeletonLoader';
 import { EmptyState } from './EmptyState';
+import { ErrorState } from './ErrorState';
 
 export interface Column<T> {
   header: string;
@@ -21,6 +22,8 @@ interface PaginatedTableProps<T> {
   onPageChange: (newPage: number) => void;
   onPageSizeChange: (newSize: number) => void;
   isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
   emptyTitle?: string;
   emptyDescription?: string;
   emptyAction?: { label: string; onClick: () => void };
@@ -38,6 +41,8 @@ export function PaginatedTable<T>({
   onPageChange,
   onPageSizeChange,
   isLoading = false,
+  error,
+  onRetry,
   emptyTitle = 'No hay registros',
   emptyDescription = 'No se encontraron resultados con los criterios seleccionados.',
   emptyAction,
@@ -46,6 +51,10 @@ export function PaginatedTable<T>({
 }: PaginatedTableProps<T>) {
   const startItem = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const endItem = Math.min(page * pageSize, total);
+
+  if (error) {
+    return <ErrorState message={error} onRetry={onRetry} />;
+  }
 
   if (isLoading) {
     return <SkeletonLoader rows={pageSize > 5 ? 5 : pageSize} cols={columns.length} />;

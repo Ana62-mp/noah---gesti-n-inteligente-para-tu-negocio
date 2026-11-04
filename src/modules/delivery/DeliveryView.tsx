@@ -246,7 +246,7 @@ export const DeliveryView: React.FC = () => {
               <label className="font-semibold text-[#111111] block mb-1">Canal:</label>
               <select
                 value={channel}
-                onChange={(e) => setChannel(e.target.value as any)}
+                onChange={(e) => setChannel(e.target.value as DeliveryOrder['channel'])}
                 className="w-full border border-[#E7E5E0] rounded-xl p-2.5 text-xs text-[#111111] bg-[#F5F4F1]"
               >
                 <option value="propio">WhatsApp / Mostrador propio</option>
