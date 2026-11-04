@@ -41,6 +41,7 @@ export const BARBER_PROFILE: BusinessProfile = {
     ],
     secondaryTitle: 'Servicios más pedidos',
     secondarySubtitle: 'Cobros de octubre por servicio',
+    secondaryCaption: 'Cobros del mes',
     secondary: [
       { label: 'Fade moderno', value: 1240 },
       { label: 'Combo corte + barba', value: 960 },

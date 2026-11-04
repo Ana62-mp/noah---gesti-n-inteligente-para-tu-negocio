@@ -40,6 +40,7 @@ export const STORE_PROFILE: BusinessProfile = {
     ],
     secondaryTitle: 'Qué se vende más',
     secondarySubtitle: 'Ventas de octubre por categoría',
+    secondaryCaption: 'Ventas del mes',
     secondary: [
       { label: 'Bebidas', value: 1490 },
       { label: 'Abarrotes', value: 1280 },

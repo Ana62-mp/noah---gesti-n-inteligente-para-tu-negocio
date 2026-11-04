@@ -58,6 +58,7 @@ export interface BusinessProfile {
     weekly: { day: string; current: number; previous: number }[];
     secondaryTitle: string;
     secondarySubtitle: string;
+    secondaryCaption: string;
     secondary: { label: string; value: number }[];
   };
   salesSummary: LabeledValue[];

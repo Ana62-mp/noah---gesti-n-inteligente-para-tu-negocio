@@ -218,3 +218,15 @@ body {
 .sidebar-nav-scroll::-webkit-scrollbar-track { background: transparent; }
 .sidebar-nav-scroll::-webkit-scrollbar-thumb { background: rgb(255 255 255 / 0.25); border-radius: 9999px; }
 .sidebar-nav-scroll::-webkit-scrollbar-thumb:hover { background: rgb(255 255 255 / 0.4); }
+
+@keyframes donut-sweep {
+  from { stroke-dasharray: 0 var(--circ-full, 1000px); }
+  to { stroke-dasharray: var(--dash) var(--rest); }
+}
+.donut-slice {
+  animation: donut-sweep 800ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  transition: stroke-width 180ms ease, opacity 180ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .donut-slice { animation: none; }
+}

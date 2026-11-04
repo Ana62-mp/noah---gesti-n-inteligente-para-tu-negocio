@@ -45,6 +45,7 @@ export const RESTAURANT_PROFILE: BusinessProfile = {
     ],
     secondaryTitle: 'A dónde se fue el dinero',
     secondarySubtitle: 'Egresos de octubre por categoría',
+    secondaryCaption: 'Egresos del mes',
     secondary: [
       { label: 'Insumos', value: 6300 },
       { label: 'Nómina', value: 2900 },

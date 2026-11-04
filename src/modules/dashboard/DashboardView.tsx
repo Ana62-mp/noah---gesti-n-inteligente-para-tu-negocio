@@ -3,7 +3,7 @@ import { CalendarCheck, ChefHat, Receipt, ShoppingBasket, TrendingUp, Wallet } f
 import { getBusinessProfile } from '../../shared/business/businessProfiles';
 import { KpiIcon } from '../../shared/business/profileTypes';
 import { useApp } from '../../shared/context/AppContext';
-import { CategoryBars, ComparisonChart } from '../../shared/ui/Charts';
+import { DonutChart, WeekProgress } from '../../shared/ui/Charts';
 import { MetricCard } from '../../shared/ui/MetricCard';
 import { NoahOrb } from '../../shared/ui/NoahOrb';
 import { NoahAlertsPanel } from './NoahAlertsPanel';
@@ -76,14 +76,14 @@ export const DashboardView: React.FC = () => {
               <h3 className="text-sm font-bold text-[#111111]">{dashboard.weeklyTitle}</h3>
               <p className="text-[11px] text-[#6B6B6B]">{dashboard.weeklyNote}</p>
             </div>
-            <ComparisonChart data={dashboard.weekly} currentLabel="Esta semana" previousLabel="Semana anterior" />
+            <WeekProgress data={dashboard.weekly} />
           </section>
           <section className={CARD}>
             <div className="flex flex-wrap items-baseline justify-between gap-x-3">
               <h3 className="text-sm font-bold text-[#111111]">{dashboard.secondaryTitle}</h3>
               <p className="text-[11px] text-[#6B6B6B]">{dashboard.secondarySubtitle}</p>
             </div>
-            <CategoryBars items={dashboard.secondary} />
+            <DonutChart data={dashboard.secondary} centerCaption={dashboard.secondaryCaption} />
           </section>
         </div>
 
