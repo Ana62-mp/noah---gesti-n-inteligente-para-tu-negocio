@@ -52,7 +52,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
       <div style={{ marginLeft: contentMargin }} className="h-full flex flex-col min-w-0 transition-[margin] duration-200 ease-out">
         <AppHeader onOpenMenu={() => sidebar.setIsMobileOpen(true)} />
-        <main key={activeSection} className="page-enter flex-1 min-h-0 overflow-y-auto p-3 sm:p-4">
+        <main key={activeSection} className="page-enter flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
           {children}
         </main>
       </div>
