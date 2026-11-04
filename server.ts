@@ -3,7 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { handleGeminiChat, hasGeminiKey } from './server/gemini';
+import { answerWithGemini, hasGeminiKey } from './server/gemini.js';
 
 dotenv.config();
 
@@ -25,7 +25,10 @@ async function startServer() {
     });
   });
 
-  app.post('/api/gemini/chat', handleGeminiChat);
+  app.post('/api/gemini/chat', async (req, res) => {
+    const { status, body } = await answerWithGemini(req.body);
+    res.status(status).json(body);
+  });
 
   // In development, hook up Vite middleware
   if (!isProduction) {

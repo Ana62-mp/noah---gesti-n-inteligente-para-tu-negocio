@@ -1,7 +1,6 @@
-import type { Request, Response } from 'express';
 import { GoogleGenAI, Type } from '@google/genai';
 
-const DEFAULT_MODEL = 'gemini-3.8-flash';
+const DEFAULT_MODEL = 'gemini-2.5-flash';
 const MAX_MESSAGE_LENGTH = 1000;
 
 const SYSTEM_INSTRUCTION = `
@@ -39,15 +38,20 @@ const RESPONSE_SCHEMA = {
 
 export const hasGeminiKey = () => Boolean(process.env.GEMINI_API_KEY || process.env.API_KEY);
 
-export async function handleGeminiChat(req: Request, res: Response) {
+export interface GeminiResult {
+  status: number;
+  body: Record<string, unknown>;
+}
+
+export async function answerWithGemini(input: unknown): Promise<GeminiResult> {
   const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
   if (!apiKey) {
-    return res.status(503).json({ error: 'Falta GEMINI_API_KEY en el servidor.', fallbackToDemo: true });
+    return { status: 503, body: { error: 'Falta GEMINI_API_KEY en el servidor.', fallbackToDemo: true } };
   }
 
-  const { message, businessContext, history } = req.body ?? {};
+  const { message, businessContext, history } = (input ?? {}) as Record<string, unknown>;
   if (typeof message !== 'string' || !message.trim() || message.length > MAX_MESSAGE_LENGTH) {
-    return res.status(400).json({ error: 'Mensaje vacío o demasiado largo.' });
+    return { status: 400, body: { error: 'Mensaje vacío o demasiado largo.' } };
   }
 
   try {
@@ -69,12 +73,12 @@ export async function handleGeminiChat(req: Request, res: Response) {
     });
 
     try {
-      return res.json(JSON.parse(response.text || '{}'));
+      return { status: 200, body: JSON.parse(response.text || '{}') };
     } catch {
-      return res.json({ texto: response.text, datosUsados: [], periodo: 'Actual', certeza: 'Media' });
+      return { status: 200, body: { texto: response.text, datosUsados: [], periodo: 'Actual', certeza: 'Media' } };
     }
   } catch (err) {
     console.error('Gemini request failed:', err instanceof Error ? err.message : err);
-    return res.status(502).json({ error: 'No se pudo consultar la IA.', fallbackToDemo: true });
+    return { status: 502, body: { error: 'No se pudo consultar la IA.', fallbackToDemo: true } };
   }
 }
