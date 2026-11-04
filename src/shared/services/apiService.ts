@@ -273,7 +273,12 @@ class ApiService {
     return [...this.tables];
   }
 
-  public async updateTableStatus(tableId: number, status: TableItem['status'], total?: number): Promise<TableItem> {
+  public async updateTableStatus(
+    tableId: number,
+    status: TableItem['status'],
+    total?: number,
+    waiterName?: string
+  ): Promise<TableItem> {
     await this.delay(100);
     const table = this.tables.find((t) => t.id === tableId);
     if (!table) throw new Error('Mesa no encontrada');
@@ -282,8 +287,13 @@ class ApiService {
       table.currentOrderId = undefined;
       table.seatedAt = undefined;
       table.total = undefined;
-    } else if (total !== undefined) {
-      table.total = total;
+      table.waiterName = undefined;
+      return { ...table };
+    }
+    if (total !== undefined) table.total = total;
+    if (waiterName) table.waiterName = waiterName;
+    if (!table.seatedAt) {
+      table.seatedAt = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
     }
     return { ...table };
   }
@@ -300,6 +310,11 @@ class ApiService {
     if (!t) throw new Error('Ticket no encontrado');
     t.status = status;
     return { ...t };
+  }
+
+  public getNextOrderNumber(): string {
+    const numbers = this.kitchenTickets.map((ticket) => Number(ticket.orderNumber.replace('#', '')) || 0);
+    return `#${Math.max(0, ...numbers) + 1}`;
   }
 
   public async addKitchenTicket(ticket: Omit<KitchenTicket, 'id'>): Promise<KitchenTicket> {

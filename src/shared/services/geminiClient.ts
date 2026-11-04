@@ -1,5 +1,6 @@
 import { BusinessConfig, ChatMessage, UserRole } from '../types';
 import { buildBusinessContext } from './businessContext';
+import { canCreateDraft } from '../permissions/rolePermissions';
 
 const HISTORY_LIMIT = 6;
 
@@ -20,9 +21,9 @@ interface GeminiAnswer {
 
 const nowLabel = () => new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
 
-const toActionDraft = (accion: GeminiAnswer['accion']): ChatMessage['actionDraft'] => {
+const toActionDraft = (accion: GeminiAnswer['accion'], role: UserRole): ChatMessage['actionDraft'] => {
   const type = accion?.tipo ? ACTION_TYPES[accion.tipo] : undefined;
-  if (!type) return undefined;
+  if (!type || !canCreateDraft(role, type)) return undefined;
   return {
     id: `draft-live-${Date.now()}`,
     type,
@@ -67,7 +68,7 @@ export const askGemini = async (
     text: data.texto || 'No pude generar una respuesta con los datos disponibles.',
     timestamp: nowLabel(),
     source: 'live',
-    actionDraft: toActionDraft(data.accion),
+    actionDraft: toActionDraft(data.accion, role),
     provenance: {
       period: data.periodo || 'Período no especificado',
       modules: data.datosUsados?.length ? data.datosUsados : ['Datos de ejemplo del negocio'],

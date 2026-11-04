@@ -1,5 +1,10 @@
 import { ChatMessage, BusinessConfig, UserRole } from '../types';
 import { askGemini } from './geminiClient';
+import { getRestrictedAnswer, isExpenseCapture, normalizeQuery, parseExpenseCapture } from './assistantPolicy';
+import { matchRoleIntent } from './roleIntents';
+import { formatCurrency } from '../utils/formatters';
+
+const nowLabel = () => new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
 
 export interface AIResponse {
   message: ChatMessage;
@@ -26,18 +31,18 @@ export class AIService {
     role: UserRole,
     history: ChatMessage[] = []
   ): Promise<AIResponse> {
-    // Role check: If waiter asks for owner financial secrets
-    const lower = userQuery.toLowerCase().trim();
-    if (role === 'waiter' && (lower.includes('ganamos') || lower.includes('rentabilidad') || lower.includes('gastos del mes'))) {
+    const normalized = normalizeQuery(userQuery);
+    const restricted = getRestrictedAnswer(role, normalized);
+    if (restricted) {
       return {
         message: {
           id: `msg-noah-${Date.now()}`,
           sender: 'noah',
-          text: `Hola. Por políticas de seguridad, esa información financiera solo la puede consultar el dueño o administrador del negocio. Si necesitas registrar un pedido o consultar platos de la carta, ¡con gusto te ayudo!`,
-          timestamp: new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
+          text: restricted,
+          timestamp: nowLabel(),
           provenance: {
             period: 'Control de acceso',
-            modules: ['Permisos y Roles'],
+            modules: ['Permisos y roles'],
             updatedAt: 'Ahora',
             certainty: 'Alta: restricción de rol activa',
           },
@@ -54,13 +59,39 @@ export class AIService {
       }
     }
 
-    // Demo Mode: Scripted intelligent intent matching
-    const demo = this.matchDemoIntent(lower, business, role);
+    const roleAnswer = await matchRoleIntent(normalized);
+    if (roleAnswer) {
+      return {
+        message: {
+          id: `msg-noah-${Date.now()}`,
+          sender: 'noah',
+          text: roleAnswer.text,
+          timestamp: nowLabel(),
+          source: 'demo',
+          provenance: {
+            period: 'Hoy',
+            modules: roleAnswer.modules,
+            updatedAt: 'Ahora',
+            certainty: 'Alta: datos de ejemplo del prototipo',
+          },
+        },
+      };
+    }
+
+    const demo = this.matchDemoIntent(normalized, business, role, userQuery);
     return { ...demo, message: { ...demo.message, source: 'demo' } };
   }
 
-  private matchDemoIntent(query: string, business: BusinessConfig, role: UserRole): AIResponse {
-    const timestamp = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+  private matchDemoIntent(query: string, business: BusinessConfig, role: UserRole, spokenQuery: string): AIResponse {
+    const timestamp = nowLabel();
+
+    if (!isExpenseCapture(query)) {
+      if (business.type === 'store') return this.matchStoreIntent(role, timestamp);
+      if (business.type === 'barbershop') return this.matchBarberIntent(query, timestamp);
+      if (query.includes('agendame') || query.includes('corte') || query.includes('barberia')) {
+        return this.matchBarberIntent(query, timestamp);
+      }
+    }
 
     // 1. ¿Cuánto vendimos hoy?
     if (query.includes('cuanto vendimos') || query.includes('ventas de hoy') || query.includes('ventas hoy')) {
@@ -76,9 +107,9 @@ export class AIService {
               title: 'Resumen de ventas de hoy',
               data: {
                 total: '$780,50',
-                orders: 86,
-                topTime: '12:30 - 14:30 ($352,00)',
-                vsLastWeek: '+12.0 % vs. martes anterior',
+                pedidos: 86,
+                mejorFranja: '12:30 - 14:30 ($352,00)',
+                frenteAlMartes: '+12 %',
               },
             },
           ],
@@ -137,9 +168,9 @@ export class AIService {
               type: 'chart',
               title: 'Comparativo semanal (Lunes y Martes)',
               data: {
-                actual: 2140,
-                anterior: 1960,
-                diferencia: '+9.2 %',
+                estaSemana: '$2.140,00',
+                semanaAnterior: '$1.960,00',
+                diferencia: '+9,2 %',
               },
             },
           ],
@@ -217,7 +248,24 @@ export class AIService {
     }
 
     // 6. ¿Qué tengo por vencer? / Merma
-    if (query.includes('por vencer') || query.includes('merma') || query.includes('vencimientos') || query.includes('sobrestock')) {
+    if (query.includes('por vencer') || query.includes('vencen') || query.includes('merma') || query.includes('vencimientos') || query.includes('sobrestock')) {
+      if (role !== 'owner') {
+        return {
+          message: {
+            id: `msg-noah-${Date.now()}`,
+            sender: 'noah',
+            text: `Tienes **5 pollos enteros (≈ 13 kg)** en la cámara frigorífica que **vencen mañana** y **3 kg de limón sutil** que deben rotar en máximo 2 días.\n\nEl dueño recibió el mismo aviso y decide qué hacer con ese excedente.`,
+            timestamp,
+            provenance: {
+              period: 'Control de caducidades a 48h',
+              modules: ['Insumos y Bodega', 'Alertas y Merma'],
+              updatedAt: 'Hoy, 08:30',
+              certainty: 'Alta: fechas de ingreso de Distribuidora Los Andes',
+            },
+          },
+        };
+      }
+
       return {
         message: {
           id: `msg-noah-${Date.now()}`,
@@ -250,12 +298,8 @@ export class AIService {
     }
 
     // 7. Registra una compra / gasto
-    if (query.includes('registra una compra') || query.includes('pague') || query.includes('registra un gasto') || query.includes('gaste')) {
-      const isLuz = query.includes('luz');
-      const amount = isLuz ? 85.00 : 45.00;
-      const concept = isLuz ? 'Pago de planilla de energía eléctrica' : 'Compra de ingredientes varios en mercado';
-      const supplier = isLuz ? 'Empresa Eléctrica Quito' : 'Mercado Mayorista Quito';
-      const category = isLuz ? 'servicios' : 'insumos';
+    if (isExpenseCapture(query)) {
+      const { amount, concept, category, supplier } = parseExpenseCapture(spokenQuery);
 
       return {
         message: {
@@ -266,14 +310,14 @@ export class AIService {
           actionDraft: {
             id: `draft-exp-${Date.now()}`,
             type: 'expense',
-            title: `Borrador de gasto: $${amount.toFixed(2)}`,
+            title: `Borrador de gasto: ${formatCurrency(amount)}`,
             details: {
               concepto: concept,
               monto: amount,
               categoria: category,
               proveedor: supplier,
               fecha: 'Hoy (03/11/2026)',
-              metodoPago: isLuz ? 'Transferencia bancaria' : 'Efectivo de caja chica',
+              metodoPago: 'Por confirmar',
               estado: 'Requiere tu confirmación',
             },
             status: 'pending',
@@ -309,7 +353,7 @@ export class AIService {
                 { nombre: 'Jarra de naranjilla', cantidad: 1, subtotal: 4.00 },
               ],
               total: 42.00,
-              mesero: role === 'waiter' ? 'Tú (Mesero)' : 'Ana',
+              mesero: 'Ana',
             },
             status: 'pending',
           },
@@ -340,7 +384,7 @@ export class AIService {
                 totalVentas: '$780,50',
                 efectivo: '$395,00',
                 tarjetas: '$225,50',
-                deunaTransf: '$160,00',
+                transferencias: '$160,00',
                 fondoInicial: '$50,00',
               },
             },
@@ -384,101 +428,14 @@ export class AIService {
       };
     }
 
-    // 11. Barbería: Agéndame un corte el martes a las 2 de la tarde
-    if (query.includes('agendame') || query.includes('corte') || query.includes('barberia') || business.type === 'barbershop') {
-      const isConflict = query.includes('martes') && (query.includes('2 de la tarde') || query.includes('14:00') || query.includes('14'));
-      if (isConflict) {
-        return {
-          message: {
-            id: `msg-noah-${Date.now()}`,
-            sender: 'noah',
-            text: `⚠️ **Horario no disponible:** David ya tiene agendado a Santiago Proaño el martes a las 14:00 (Fade de 45 min).\n\nTe propongo estos 3 horarios libres más cercanos:`,
-            timestamp,
-            cards: [
-              {
-                type: 'appointment',
-                title: 'Horarios libres alternativos con David',
-                data: {
-                  conflicto: 'Martes 14:00 ocupado por Fade (45 min)',
-                  alternativas: ['Martes 14:50', 'Martes 15:30', 'Miércoles 10:00'],
-                },
-              },
-            ],
-            provenance: {
-              period: 'Agenda semanal de barberos',
-              modules: ['Agenda de Citas (Barber Kings)'],
-              updatedAt: 'Ahora',
-              certainty: 'Alta: detección automática de solapamiento',
-            },
-          },
-        };
-      }
-
-      return {
-        message: {
-          id: `msg-noah-${Date.now()}`,
-          sender: 'noah',
-          text: `He preparado la reserva para **Luis**:\n• Servicio: Corte clásico con lavado (30 min)\n• Barbero: David\n• Fecha: Martes 10 de noviembre, 15:00\n• Valor: $6,00\n\n¿Deseas confirmar la cita?`,
-          timestamp,
-          actionDraft: {
-            id: `draft-apt-${Date.now()}`,
-            type: 'appointment',
-            title: 'Cita en Barber Kings: Luis',
-            details: {
-              cliente: 'Luis (Corte clásico)',
-              barbero: 'David',
-              horario: 'Martes, 15:00 - 15:30',
-              valor: 6.00,
-            },
-            status: 'pending',
-          },
-          provenance: {
-            period: 'Agenda de servicios',
-            modules: ['Agenda de Citas'],
-            updatedAt: 'Ahora',
-            certainty: 'Borrador sin solapamiento',
-          },
-        },
-        requiresConfirmation: true,
-      };
-    }
-
-    // 12. Tienda: ¿Cuánto gasté este mes?
-    if (business.type === 'store' || query.includes('tienda') || query.includes('gaste este mes')) {
-      return {
-        message: {
-          id: `msg-noah-${Date.now()}`,
-          sender: 'noah',
-          text: `Doña Rosa, en octubre vendiste **$4.800,00** y tuviste compras/gastos por **$3.650,00**. Te quedan aproximadamente **$1.150,00** antes de pagar el arriendo del local ($350,00).`,
-          timestamp,
-          cards: [
-            {
-              type: 'kpi',
-              title: 'Resumen de Tienda Doña Rosa - Octubre',
-              data: {
-                ingresos: '$4.800,00',
-                egresos: '$3.650,00',
-                saldoAprox: '$1.150,00',
-                arriendoPendiente: '$350,00',
-              },
-            },
-          ],
-          provenance: {
-            period: 'Octubre 2026',
-            modules: ['Ingresos y Egresos Simples'],
-            updatedAt: 'Cierre del mes',
-            certainty: 'Media: registro de 20 notas de venta y facturas',
-          },
-        },
-      };
-    }
-
     // Default polite response
     return {
       message: {
         id: `msg-noah-${Date.now()}`,
         sender: 'noah',
-        text: `Entendido, Carlos. Con base en los datos registrados de **${business.name}**, puedo ayudarte a consultar ventas de hoy, rentabilidad del mes, recetas y costeo, insumos por vencer o registrar pedidos y gastos por voz. ¿De cuál te gustaría ver el detalle?`,
+        text: role === 'owner'
+          ? `Entendido. Con los datos registrados de **${business.name}** puedo ayudarte a consultar ventas de hoy, rentabilidad del mes, recetas y costeo, insumos por vencer o registrar pedidos y gastos por voz. ¿Cuál quieres ver?`
+          : `No tengo esa respuesta en esta demostración. Prueba con una de las preguntas sugeridas.`,
         timestamp,
         provenance: {
           period: 'Consulta general',
@@ -487,6 +444,112 @@ export class AIService {
           certainty: 'Alta',
         },
       },
+    };
+  }
+
+  private matchStoreIntent(role: UserRole, timestamp: string): AIResponse {
+    if (role !== 'owner') {
+      return {
+        message: {
+          id: `msg-noah-${Date.now()}`,
+          sender: 'noah',
+          text: `En octubre la tienda vendió **$4.800,00**. Los egresos y el resultado solo los ve el dueño.`,
+          timestamp,
+          provenance: {
+            period: 'Octubre 2026',
+            modules: ['Ingresos de la tienda'],
+            updatedAt: 'Cierre del mes',
+            certainty: 'Media: registro de 20 notas de venta y facturas',
+          },
+        },
+      };
+    }
+
+    return {
+      message: {
+        id: `msg-noah-${Date.now()}`,
+        sender: 'noah',
+        text: `Doña Rosa, en octubre vendiste **$4.800,00** y tuviste compras/gastos por **$3.650,00**. Te quedan aproximadamente **$1.150,00** antes de pagar el arriendo del local ($350,00).`,
+        timestamp,
+        cards: [
+          {
+            type: 'kpi',
+            title: 'Resumen de Tienda Doña Rosa - Octubre',
+            data: {
+              ingresos: '$4.800,00',
+              egresos: '$3.650,00',
+              saldoAprox: '$1.150,00',
+              arriendoPendiente: '$350,00',
+            },
+          },
+        ],
+        provenance: {
+          period: 'Octubre 2026',
+          modules: ['Ingresos y Egresos Simples'],
+          updatedAt: 'Cierre del mes',
+          certainty: 'Media: registro de 20 notas de venta y facturas',
+        },
+      },
+    };
+  }
+
+  private matchBarberIntent(query: string, timestamp: string): AIResponse {
+    const isConflict = query.includes('martes') && (query.includes('2 de la tarde') || query.includes('14:00'));
+    const time = query.match(/\d{1,2}:\d{2}/)?.[0] ?? '15:00';
+    if (isConflict) {
+      return {
+        message: {
+          id: `msg-noah-${Date.now()}`,
+          sender: 'noah',
+          text: `⚠️ **Horario no disponible:** David ya tiene agendado a Santiago Proaño el martes a las 14:00 (Fade de 45 min).\n\nTe propongo estos 3 horarios libres más cercanos:`,
+          timestamp,
+          cards: [
+            {
+              type: 'appointment',
+              title: 'Horarios libres alternativos con David',
+              data: {
+                conflicto: 'Martes 14:00 ocupado por Fade (45 min)',
+                alternativas: ['Martes 14:50', 'Martes 15:30', 'Miércoles 10:00'],
+              },
+            },
+          ],
+          provenance: {
+            period: 'Agenda semanal de barberos',
+            modules: ['Agenda de Citas (Barber Kings)'],
+            updatedAt: 'Ahora',
+            certainty: 'Alta: detección automática de solapamiento',
+          },
+        },
+      };
+    }
+
+    return {
+      message: {
+        id: `msg-noah-${Date.now()}`,
+        sender: 'noah',
+        text: `He preparado la reserva para **Luis**:\n• Servicio: Corte clásico con lavado (30 min)\n• Barbero: David\n• Fecha: Martes, ${time}\n• Valor: $6,00\n\n¿Deseas confirmar la cita?`,
+        timestamp,
+        actionDraft: {
+          id: `draft-apt-${Date.now()}`,
+          type: 'appointment',
+          title: 'Cita en Barber Kings: Luis',
+          details: {
+            cliente: 'Luis',
+            barbero: 'David',
+            horario: `Martes, ${time}`,
+            servicio: 'Corte clásico',
+            valor: 6.00,
+          },
+          status: 'pending',
+        },
+        provenance: {
+          period: 'Agenda de servicios',
+          modules: ['Agenda de Citas'],
+          updatedAt: 'Ahora',
+          certainty: 'Borrador sin solapamiento',
+        },
+      },
+      requiresConfirmation: true,
     };
   }
 }

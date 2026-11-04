@@ -1,5 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { applyActionDraft, SECTION_AFTER_DRAFT } from '../../shared/services/actionDraftService';
+import { getRoleGreeting, getSuggestedChips } from '../../shared/services/assistantPolicy';
+import { canAccessSection } from '../../shared/permissions/rolePermissions';
+import { getErrorMessage } from '../../shared/utils/errors';
+import { RichText } from '../../shared/ui/RichText';
+import { DraftDetails, humanizeKey } from '../../shared/ui/DraftDetails';
 import { aiService } from '../../shared/services/aiService';
 import { speechService } from '../../shared/services/speechService';
 import { ChatMessage } from '../../shared/types';
@@ -25,6 +31,8 @@ interface NoahChatProps {
   isFullScreen?: boolean;
 }
 
+const VOICE_SIMULATORS = 3;
+
 export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
   const {
     currentBusiness,
@@ -40,7 +48,7 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
     {
       id: 'welcome-1',
       sender: 'noah',
-      text: `¡Hola, ${currentBusiness.ownerName.split(' ')[0]}! Soy **Noah**, tu asistente de gestión. Pregúntame cómo va tu negocio o pídeme que registre un pedido, un gasto o revise tus márgenes por voz.`,
+      text: getRoleGreeting(currentRole, currentBusiness.ownerName.split(' ')[0]),
       timestamp: new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
       provenance: {
         period: 'En vivo',
@@ -69,37 +77,7 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
     scrollToBottom();
   }, [messages, liveTranscript, isTyping]);
 
-  // Suggested chips depending on business and role
-  const suggestedChips =
-    currentRole === 'waiter'
-      ? [
-          'Dos secos de pollo y tres ceviches para la mesa cuatro',
-          '¿Cuál es la mesa que más tiempo lleva esperando?',
-          'Platos disponibles hoy',
-        ]
-      : currentBusiness.type === 'store'
-      ? [
-          '¿Cuánto gasté este mes?',
-          'Registra una compra de $45 en abarrotes',
-          '¿Cuánto tengo en caja hoy?',
-        ]
-      : currentBusiness.type === 'barbershop'
-      ? [
-          'Agéndame un corte el martes a las 2 de la tarde',
-          '¿Qué horarios tiene libres David hoy?',
-          'Registra un gasto de $15 en toallas',
-        ]
-      : [
-          'Noah, ¿cuánto vendimos hoy?',
-          '¿Cuánto ganamos este mes?',
-          '¿Esta semana vamos mejor que la anterior?',
-          '¿Cuál es mi plato menos rentable?',
-          '¿Cuánto me cuesta hacer un encebollado?',
-          '¿Qué tengo por vencer?',
-          'Registra una compra de ingredientes por 45 dólares',
-          '¿Cuánto tengo en caja?',
-          'Dame un consejo para vender más el miércoles',
-        ];
+  const suggestedChips = getSuggestedChips(currentRole, currentBusiness.type);
 
   const handleSendMessage = async (queryText?: string) => {
     const textToSend = queryText || inputText.trim() || liveTranscript.trim();
@@ -217,35 +195,18 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
     );
   };
 
-  const handleConfirmAction = (msgId: string, draft: NonNullable<ChatMessage['actionDraft']>) => {
-    // Trigger confetti
+  const handleConfirmAction = async (msgId: string, draft: NonNullable<ChatMessage['actionDraft']>) => {
     try {
+      const confirmation = await applyActionDraft(draft);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === msgId && m.actionDraft ? { ...m, actionDraft: { ...m.actionDraft, status: 'confirmed' } } : m))
+      );
       confetti({ particleCount: 45, spread: 60, origin: { y: 0.8 } });
-    } catch (e) {}
-
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === msgId && m.actionDraft
-          ? {
-              ...m,
-              actionDraft: { ...m.actionDraft, status: 'confirmed' },
-            }
-          : m
-      )
-    );
-
-    if (draft.type === 'expense') {
-      showToast('Gasto confirmado y registrado en flujo de caja', 'success');
-      setActiveSection('expenses');
-    } else if (draft.type === 'order') {
-      showToast('Pedido confirmado y enviado a Cocina', 'success');
-      setActiveSection('kitchen');
-    } else if (draft.type === 'promo') {
-      showToast('Borrador de promoción guardado para su aplicación', 'success');
-      setActiveSection('alerts');
-    } else if (draft.type === 'appointment') {
-      showToast('Cita confirmada en la agenda de Barber Kings', 'success');
-      setActiveSection('appointments');
+      showToast(confirmation, 'success');
+      const nextSection = SECTION_AFTER_DRAFT[draft.type];
+      if (canAccessSection(currentRole, nextSection)) setActiveSection(nextSection);
+    } catch (error) {
+      showToast(getErrorMessage(error), 'error');
     }
   };
 
@@ -341,7 +302,7 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
                         : 'bg-[#FBF6E6] text-[#111111] border border-[#EBD48F]/60 rounded-tl-xs'
                     }`}
                   >
-                    <div className="whitespace-pre-line">{msg.text}</div>
+                    <RichText text={msg.text} />
 
                     {/* Rich Cards embedded inside Noah's bubble */}
                     {msg.cards && msg.cards.length > 0 && (
@@ -355,11 +316,11 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
                               <span>{card.title}</span>
                             </div>
 
-                            {card.type === 'kpi' && (
+                            {(card.type === 'kpi' || card.type === 'chart' || card.type === 'advice') && (
                               <div className="grid grid-cols-2 gap-2">
                                 {Object.entries(card.data).map(([key, val]) => (
                                   <div key={key} className="bg-[#FAFAF8] p-2 rounded-lg">
-                                    <div className="text-[10px] text-[#6B6B6B] uppercase">{key}</div>
+                                    <div className="text-[10px] text-[#6B6B6B] uppercase">{humanizeKey(key)}</div>
                                     <div className="text-sm font-bold tabular-nums text-[#111111]">
                                       {String(val)}
                                     </div>
@@ -429,15 +390,8 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
                           </span>
                         </div>
 
-                        <div className="space-y-1 text-xs text-[#6B6B6B] mb-3">
-                          {Object.entries(msg.actionDraft.details).map(([k, v]) => (
-                            <div key={k} className="flex justify-between">
-                              <span className="capitalize">{k}:</span>
-                              <span className="font-semibold text-[#111111]">
-                                {typeof v === 'object' ? JSON.stringify(v) : String(v)}
-                              </span>
-                            </div>
-                          ))}
+                        <div className="mb-3">
+                          <DraftDetails details={msg.actionDraft.details} />
                         </div>
 
                         {msg.actionDraft.status === 'pending' ? (
@@ -474,10 +428,10 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
                   </div>
 
                   {/* Message Footer: Provenance & Audio speaker */}
-                  <div className="flex items-center gap-2 px-1 text-[11px] text-[#6B6B6B]">
-                    <span>{msg.timestamp}</span>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-[11px] text-[#6B6B6B]">
+                    <span className="whitespace-nowrap">{msg.timestamp}</span>
                     {!isUser && msg.source && (
-                      <span className="px-1.5 py-0.5 rounded bg-[#F5F4F1] border border-[#E7E5E0] font-semibold">
+                      <span className="px-1.5 py-0.5 rounded bg-[#F5F4F1] border border-[#E7E5E0] font-semibold whitespace-nowrap">
                         {msg.source === 'live' ? 'IA en vivo' : 'Respuesta simulada'}
                       </span>
                     )}
@@ -629,30 +583,21 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
         </div>
 
         {/* Demo Simulated Audio Trigger Buttons */}
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#E7E5E0]/60 text-[11px] text-[#6B6B6B]">
+        <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-[#E7E5E0]/60 text-[11px] text-[#6B6B6B]">
           <span className="flex items-center gap-1 font-medium">
             <Play className="w-3 h-3 text-[#CF6811]" />
             Simuladores de voz para presentación:
           </span>
           <div className="flex items-center gap-1.5 flex-wrap">
-            <button
-              onClick={() => handleSimulateVoice('Noah, ¿cuánto vendimos hoy?')}
-              className="text-[10px] text-[#CF6811] hover:underline bg-[#FBF6E6] px-2 py-0.5 rounded font-semibold"
-            >
-              "¿Cuánto vendimos?"
-            </button>
-            <button
-              onClick={() => handleSimulateVoice('¿Cuánto ganamos este mes?')}
-              className="text-[10px] text-[#CF6811] hover:underline bg-[#FBF6E6] px-2 py-0.5 rounded font-semibold"
-            >
-              "Rentabilidad"
-            </button>
-            <button
-              onClick={() => handleSimulateVoice('¿Qué tengo por vencer?')}
-              className="text-[10px] text-[#CF6811] hover:underline bg-[#FBF6E6] px-2 py-0.5 rounded font-semibold"
-            >
-              "Merma"
-            </button>
+            {suggestedChips.slice(0, VOICE_SIMULATORS).map((chip) => (
+              <button
+                key={chip}
+                onClick={() => handleSimulateVoice(chip)}
+                className="text-[10px] text-left text-[#A43108] hover:underline bg-[#FBF6E6] px-2 py-0.5 rounded font-semibold"
+              >
+                {chip}
+              </button>
+            ))}
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../shared/context/AppContext';
 import { speechService } from '../../shared/services/speechService';
+import { canAccessSection, getVoiceScenariosForRole } from '../../shared/permissions/rolePermissions';
 import { apiService } from '../../shared/services/apiService';
 import { NoahOrb } from '../../shared/ui/NoahOrb';
 import { Button } from '../../shared/ui/Button';
@@ -21,7 +22,8 @@ import {
 import confetti from 'canvas-confetti';
 
 export const NoahVoiceScenarios: React.FC = () => {
-  const { showToast, setActiveSection } = useApp();
+  const { showToast, setActiveSection, currentRole } = useApp();
+  const allowedScenarios = getVoiceScenariosForRole(currentRole);
   const [activeScenario, setActiveScenario] = useState<'A' | 'B' | 'C'>('A');
 
   // Scenario A State (Waiter order Table 4)
@@ -85,10 +87,10 @@ export const NoahVoiceScenarios: React.FC = () => {
 
     // Add to kitchen tickets and occupy table 4
     await apiService.addKitchenTicket({
-      orderNumber: '#886',
+      orderNumber: apiService.getNextOrderNumber(),
       tableNumber: 4,
       channel: 'salon',
-      waiterName: 'Tú (Mesero voz)',
+      waiterName: 'Ana',
       createdAt: new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
       elapsedMinutes: 0,
       status: 'pending',
@@ -100,7 +102,7 @@ export const NoahVoiceScenarios: React.FC = () => {
       })),
     });
 
-    await apiService.updateTableStatus(4, 'occupied', 42.00);
+    await apiService.updateTableStatus(4, 'occupied', orderAItems.reduce((sum, item) => sum + item.price * item.qty, 0));
 
     setScenarioAState('confirmed');
     showToast('¡Comanda enviada a Cocina y Mesa 4 ocupada!', 'success');
@@ -192,6 +194,7 @@ export const NoahVoiceScenarios: React.FC = () => {
       </div>
 
       {/* Scenario Selector Tabs */}
+      {allowedScenarios.length > 1 && (
       <div className="flex flex-wrap items-center gap-2 p-1 bg-[#F5F4F1] rounded-2xl border border-[#E7E5E0]">
         <button
           onClick={() => setActiveScenario('A')}
@@ -229,6 +232,7 @@ export const NoahVoiceScenarios: React.FC = () => {
           <Badge variant="harvest" size="sm">Finanzas</Badge>
         </button>
       </div>
+      )}
 
       {/* ================= ESCENARIO A ================= */}
       {activeScenario === 'A' && (
@@ -434,12 +438,14 @@ export const NoahVoiceScenarios: React.FC = () => {
                     <CheckCircle2 className="w-4 h-4" />
                     <span>¡Comanda recibida en Cocina y Mesa 4 ocupada!</span>
                   </div>
-                  <button
-                    onClick={() => setActiveSection('kitchen')}
-                    className="text-[11px] text-[#CF6811] underline font-semibold mt-1 inline-block"
-                  >
-                    Ver comanda en Tablero de Cocina →
-                  </button>
+                  {canAccessSection(currentRole, 'kitchen') && (
+                    <button
+                      onClick={() => setActiveSection('kitchen')}
+                      className="text-[11px] text-[#CF6811] underline font-semibold mt-1 inline-block"
+                    >
+                      Ver comanda en Tablero de Cocina →
+                    </button>
+                  )}
                 </div>
               )}
             </div>
