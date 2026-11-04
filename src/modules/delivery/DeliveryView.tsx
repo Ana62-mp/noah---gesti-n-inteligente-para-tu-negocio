@@ -1,5 +1,7 @@
 import { DeliveryStatusSummary } from './DeliveryStatusSummary';
 import { FilterBar } from '../../shared/ui/FilterBar';
+import { Pagination } from '../../shared/ui/Pagination';
+import { usePagedArray } from '../../shared/hooks/usePagedArray';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
 import { apiService } from '../../shared/services/apiService';
@@ -80,8 +82,10 @@ export const DeliveryView: React.FC = () => {
       (!orderQuery || `${order.customerName} ${order.orderNumber}`.toLowerCase().includes(orderQuery.toLowerCase()))
   );
 
+  const pagedOrders = usePagedArray(visibleOrders, 6);
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Top Header */}
       <div className="flex flex-wrap items-center justify-end gap-2">
 <Button
@@ -122,7 +126,7 @@ export const DeliveryView: React.FC = () => {
 
       {/* Channels Status Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {visibleOrders.map((o) => {
+        {pagedOrders.visible.map((o) => {
           const statusLabels: Record<DeliveryOrder['status'], { label: string; v: 'banana' | 'harvest' | 'cinnamon' | 'olive' }> = {
             received: { label: 'Recibido', v: 'banana' },
             in_kitchen: { label: 'En cocina', v: 'harvest' },
@@ -228,6 +232,11 @@ export const DeliveryView: React.FC = () => {
           );
         })}
       </div>
+      {visibleOrders.length > 0 && (
+        <div className="rounded-xl overflow-hidden border border-[#E7E5E0]">
+          <Pagination page={pagedOrders.page} pageSize={pagedOrders.pageSize} total={pagedOrders.total} totalPages={pagedOrders.totalPages} onPageChange={pagedOrders.setPage} onPageSizeChange={pagedOrders.setPageSize} sizes={[6, 12]} />
+        </div>
+      )}
 
       {/* New Takeout Order Modal */}
       <Modal

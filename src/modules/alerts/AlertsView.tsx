@@ -5,6 +5,9 @@ import { NotificationAlert } from '../../shared/types';
 import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
 import { FilterBar } from '../../shared/ui/FilterBar';
+import { Pagination } from '../../shared/ui/Pagination';
+import { StatStrip } from '../../shared/ui/StatStrip';
+import { usePagedArray } from '../../shared/hooks/usePagedArray';
 import { Modal } from '../../shared/ui/Modal';
 import { getVisibleAlerts } from '../../shared/permissions/rolePermissions';
 import {
@@ -74,14 +77,24 @@ export const AlertsView: React.FC = () => {
     loadAlerts();
   };
 
+  const filteredAlerts = alerts.filter((alert) => !alert.dismissed && (!severityFilter || alert.severity === severityFilter) && (!topicFilter || alert.topic === topicFilter) && (!alertQuery || `${alert.title} ${alert.message}`.toLowerCase().includes(alertQuery.toLowerCase())));
+  const pagedAlerts = usePagedArray(filteredAlerts, 4);
+  const countBy = (severity: NotificationAlert['severity']) => alerts.filter((alert) => !alert.dismissed && alert.severity === severity).length;
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Top Header */}
       <div className="flex flex-wrap items-center justify-end gap-2">
 <Badge variant="banana">
           {alerts.filter((a) => !a.dismissed).length} alertas activas
         </Badge>
       </div>
+
+      <StatStrip stats={[
+        { label: 'Críticas', value: String(countBy('critical')), hint: 'Requieren acción hoy', tone: 'terracotta' },
+        { label: 'Advertencias', value: String(countBy('warning')), hint: 'Conviene revisarlas', tone: 'banana' },
+        { label: 'Oportunidades', value: String(countBy('info')), hint: 'Ideas de Noah', tone: 'olive' },
+      ]} />
 
       <FilterBar
         search={{ value: alertQuery, onChange: setAlertQuery, placeholder: 'Buscar alerta…' }}
@@ -97,7 +110,7 @@ export const AlertsView: React.FC = () => {
 
       {/* Alerts Feed */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-        {alerts.filter((alert) => (!severityFilter || alert.severity === severityFilter) && (!topicFilter || alert.topic === topicFilter) && (!alertQuery || `${alert.title} ${alert.message}`.toLowerCase().includes(alertQuery.toLowerCase()))).map((alert) => {
+        {pagedAlerts.visible.map((alert) => {
           if (alert.dismissed) return null;
 
           const severityStyles = {
@@ -188,6 +201,11 @@ export const AlertsView: React.FC = () => {
           );
         })}
       </div>
+      {filteredAlerts.length > 0 && (
+        <div className="rounded-xl overflow-hidden border border-[#E7E5E0]">
+          <Pagination page={pagedAlerts.page} pageSize={pagedAlerts.pageSize} total={pagedAlerts.total} totalPages={pagedAlerts.totalPages} onPageChange={pagedAlerts.setPage} onPageSizeChange={pagedAlerts.setPageSize} sizes={[4, 8]} />
+        </div>
+      )}
 
       {/* Promotion Draft Modal (RN-10: Never applies automatically) */}
       <Modal

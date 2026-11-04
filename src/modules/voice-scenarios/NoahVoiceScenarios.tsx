@@ -6,6 +6,7 @@ import { getBusinessProfile } from '../../shared/business/businessProfiles';
 import { VoiceScenarioId } from '../../shared/business/profileTypes';
 import { EmptyState } from '../../shared/ui/EmptyState';
 import { StoreSaleScenario } from './StoreSaleScenario';
+import { VoiceHelp } from './VoiceHelp';
 import { apiService } from '../../shared/services/apiService';
 import { NoahOrb } from '../../shared/ui/NoahOrb';
 import { Button } from '../../shared/ui/Button';
@@ -655,6 +656,8 @@ export const NoahVoiceScenarios: React.FC = () => {
           )}
         </div>
       )}
+
+      <VoiceHelp />
     </div>
   );
 };
