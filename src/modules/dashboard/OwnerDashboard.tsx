@@ -211,7 +211,7 @@ export const OwnerDashboard: React.FC = () => {
                 Esta semana
               </span>
               <span className="flex items-center gap-1.5 text-[#6B6B6B]">
-                <span className="w-3 h-3 rounded-sm bg-[#E7E5E0]" />
+                <span className="w-3 h-3 rounded-sm bg-[#D59F3F]" />
                 Semana anterior
               </span>
             </div>
@@ -230,7 +230,7 @@ export const OwnerDashboard: React.FC = () => {
                     <div className="flex items-end gap-1 w-full justify-center h-full">
                       {/* Anterior */}
                       <div
-                        className="w-3 sm:w-5 bg-[#E7E5E0] rounded-t-sm transition-all group-hover:bg-[#D59F3F]/40"
+                        className="w-3 sm:w-5 bg-[#D59F3F]/70 rounded-t-sm transition-all group-hover:bg-[#D59F3F]"
                         style={{ height: `${antHeight}%` }}
                         title={`${d.day} anterior: $${d.anterior}`}
                       />

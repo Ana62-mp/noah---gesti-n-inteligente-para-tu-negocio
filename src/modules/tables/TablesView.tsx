@@ -110,22 +110,22 @@ export const TablesView: React.FC = () => {
             free: {
               label: 'Libre',
               badgeVariant: 'neutral' as const,
-              border: 'border-[#E7E5E0] bg-white hover:border-[#CF6811]',
+              border: 'border-[#E7E5E0] border-t-4 border-t-[#8A7424] bg-white hover:border-[#CF6811]',
             },
             ordering: {
               label: 'Pidiendo',
               badgeVariant: 'banana' as const,
-              border: 'border-[#D59F3F] bg-[#FFFBEB] hover:shadow-md',
+              border: 'border-[#D59F3F] border-t-4 border-t-[#D59F3F] bg-[#FFF6DC] hover:shadow-md',
             },
             occupied: {
               label: 'Ocupada',
               badgeVariant: 'cinnamon' as const,
-              border: 'border-[#CF6811] bg-[#FBF6E6] hover:shadow-md',
+              border: 'border-[#CF6811] border-t-4 border-t-[#CF6811] bg-[#FDEBD6] hover:shadow-md',
             },
             billing: {
               label: 'Por cobrar',
               badgeVariant: 'terracotta' as const,
-              border: 'border-[#A43108] bg-red-50/50 hover:shadow-md',
+              border: 'border-[#A43108] border-t-4 border-t-[#A43108] bg-[#FBE3DA] hover:shadow-md',
             },
           }[t.status];
 
@@ -133,7 +133,7 @@ export const TablesView: React.FC = () => {
             <div
               key={t.id}
               onClick={() => handleOpenTable(t)}
-              className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer relative shadow-2xs overflow-hidden ${statusConfig.border}`}
+              className={`p-4 sm:p-5 rounded-2xl border card-lift cursor-pointer relative flex flex-col overflow-hidden ${statusConfig.border}`}
             >
               <div className="flex items-start justify-between mb-3">
                 <span className="font-display font-extrabold text-base text-[#111111]">
@@ -144,7 +144,7 @@ export const TablesView: React.FC = () => {
                 </Badge>
               </div>
 
-              <div className="space-y-1.5 text-xs text-[#6B6B6B]">
+              <div className="space-y-1.5 text-xs text-[#6B6B6B] mb-4">
                 <div className="flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 shrink-0" />
                   <span>Capacidad: {t.capacity} personas</span>
@@ -167,7 +167,7 @@ export const TablesView: React.FC = () => {
                 )}
               </div>
 
-              <div className="mt-4 pt-3 border-t border-black/5 flex items-center justify-between text-[11px] text-[#CF6811] font-semibold">
+              <div className="mt-auto pt-3 border-t border-black/10 flex items-center justify-between text-[11px] text-[#CF6811] font-semibold">
                 <span>{t.status === 'free' ? 'Asignar mesa' : 'Ver comanda'}</span>
                 <span>→</span>
               </div>
@@ -181,7 +181,7 @@ export const TablesView: React.FC = () => {
         <Modal
           isOpen={isDetailModalOpen}
           onClose={() => setIsDetailModalOpen(false)}
-          title={`Detalle de Mesa ${selectedTable.id} (${selectedTable.name})`}
+          title={`Detalle de ${selectedTable.name}`}
           subtitle={`Capacidad para ${selectedTable.capacity} personas`}
         >
           <div className="space-y-4 text-xs">
@@ -205,17 +205,17 @@ export const TablesView: React.FC = () => {
             {selectedTable.status === 'free' ? (
               <div className="space-y-2 pt-2">
                 <p className="text-[#6B6B6B]">Esta mesa se encuentra desocupada y limpia.</p>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant="primary"
-                    className="flex-1"
+                    className="flex-1 min-w-[180px]"
                     onClick={() => handleOccupyTable('occupied')}
                   >
                     Sentar comensales y abrir comanda
                   </Button>
                   <Button
                     variant="secondary"
-                    className="flex-1"
+                    className="flex-1 min-w-[180px]"
                     onClick={() => setActiveSection('voice_scenarios')}
                   >
                     Tomar pedido por voz

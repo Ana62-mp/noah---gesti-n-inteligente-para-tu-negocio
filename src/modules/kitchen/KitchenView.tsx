@@ -82,9 +82,9 @@ export const KitchenView: React.FC = () => {
       </div>
 
       {/* 3-Column Kanban Board */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
         {/* Column 1: Pendiente */}
-        <div className="bg-[#FAFAF8] rounded-2xl border border-[#E7E5E0] p-4 space-y-4">
+        <div className="bg-[#FFF6DC] border-[#D59F3F]/50 rounded-2xl border p-4 space-y-4 min-h-[420px]">
           <div className="flex items-center justify-between pb-2 border-b border-[#E7E5E0]">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-[#D59F3F]" />
@@ -116,7 +116,7 @@ export const KitchenView: React.FC = () => {
         </div>
 
         {/* Column 2: En Preparación */}
-        <div className="bg-[#FAFAF8] rounded-2xl border border-[#E7E5E0] p-4 space-y-4">
+        <div className="bg-[#FDEBD6] border-[#CF6811]/50 rounded-2xl border p-4 space-y-4 min-h-[420px]">
           <div className="flex items-center justify-between pb-2 border-b border-[#E7E5E0]">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-[#CF6811]" />
@@ -148,7 +148,7 @@ export const KitchenView: React.FC = () => {
         </div>
 
         {/* Column 3: Listo / Entregado */}
-        <div className="bg-[#FAFAF8] rounded-2xl border border-[#E7E5E0] p-4 space-y-4">
+        <div className="bg-[#EEEBD0] border-[#5C5011]/40 rounded-2xl border p-4 space-y-4 min-h-[420px]">
           <div className="flex items-center justify-between pb-2 border-b border-[#E7E5E0]">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-[#5C5011]" />

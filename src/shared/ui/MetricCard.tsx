@@ -54,7 +54,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     >
       <div className={`absolute inset-x-0 top-0 h-1 ${TONE_STYLES[tone].bar}`} />
       <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-[#6B6B6B] truncate" title={title}>
+        <span className="text-[11px] font-bold uppercase tracking-wide text-[#6B6B6B] leading-tight" title={title}>
           {title}
         </span>
         <div className="flex items-center gap-1 shrink-0">
