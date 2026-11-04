@@ -153,7 +153,7 @@ export const ExpensesView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
         <div>
           <h2 className="text-lg font-bold text-[#111111]">Gastos y Compras</h2>
           <p className="text-xs text-[#6B6B6B]">
@@ -167,7 +167,7 @@ export const ExpensesView: React.FC = () => {
               onClick={() => setActiveTab('expenses')}
               className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
                 activeTab === 'expenses'
-                  ? 'bg-white text-[#111111] shadow-xs'
+                  ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]'
                   : 'text-[#6B6B6B] hover:text-[#111111]'
               }`}
             >
@@ -177,7 +177,7 @@ export const ExpensesView: React.FC = () => {
               onClick={() => setActiveTab('cashflow')}
               className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
                 activeTab === 'cashflow'
-                  ? 'bg-white text-[#111111] shadow-xs'
+                  ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]'
                   : 'text-[#6B6B6B] hover:text-[#111111]'
               }`}
             >
@@ -209,31 +209,31 @@ export const ExpensesView: React.FC = () => {
         <>
           {/* Category Summary KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-xs">
+            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
               <span className="text-[10px] uppercase font-bold text-[#6B6B6B]">Insumos (Mes)</span>
               <div className="text-lg font-bold font-mono text-[#111111] tabular-nums mt-1">
                 $6.300,00
               </div>
             </div>
-            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-xs">
+            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
               <span className="text-[10px] uppercase font-bold text-[#6B6B6B]">Nómina / Sueldos</span>
               <div className="text-lg font-bold font-mono text-[#111111] tabular-nums mt-1">
                 $2.900,00
               </div>
             </div>
-            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-xs">
+            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
               <span className="text-[10px] uppercase font-bold text-[#6B6B6B]">Arriendo local</span>
               <div className="text-lg font-bold font-mono text-[#111111] tabular-nums mt-1">
                 $850,00
               </div>
             </div>
-            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-xs">
+            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
               <span className="text-[10px] uppercase font-bold text-[#6B6B6B]">Servicios básicos</span>
               <div className="text-lg font-bold font-mono text-[#111111] tabular-nums mt-1">
                 $349,60
               </div>
             </div>
-            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-xs">
+            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
               <span className="text-[10px] uppercase font-bold text-[#A43108]">Total egresos</span>
               <div className="text-lg font-bold font-mono text-[#A43108] tabular-nums mt-1">
                 $12.450,00
@@ -293,7 +293,7 @@ export const ExpensesView: React.FC = () => {
         </>
       ) : (
         /* Cash Flow Chart View */
-        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs space-y-6">
+        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-6">
           <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-4">
             <div>
               <h3 className="text-base font-bold text-[#111111]">

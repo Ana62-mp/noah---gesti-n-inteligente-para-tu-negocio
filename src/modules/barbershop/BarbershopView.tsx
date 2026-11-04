@@ -83,7 +83,7 @@ export const BarbershopView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header & Cotizable Tag */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
         <div>
           <div className="flex items-center gap-2">
             <Scissors className="w-5 h-5 text-[#CF6811]" />
@@ -150,7 +150,7 @@ export const BarbershopView: React.FC = () => {
             onClick={() => setSelectedBarber(b)}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
               selectedBarber === b
-                ? 'bg-[#421A05] text-white shadow-xs'
+                ? 'bg-[#421A05] text-white shadow-[var(--shadow-soft)]'
                 : 'bg-[#F5F4F1] text-[#6B6B6B] hover:text-[#111111]'
             }`}
           >
@@ -160,7 +160,7 @@ export const BarbershopView: React.FC = () => {
       </div>
 
       {/* Schedule Agenda Timeline Grid */}
-      <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs space-y-4">
+      <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-4">
         <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-3">
           <div>
             <h3 className="text-base font-bold text-[#111111]">
@@ -185,7 +185,7 @@ export const BarbershopView: React.FC = () => {
                 key={timeSlot}
                 className={`p-3.5 rounded-xl border flex items-center justify-between transition-all ${
                   appt
-                    ? 'bg-[#FBF6E6] border-[#EBD48F] shadow-xs'
+                    ? 'bg-[#FBF6E6] border-[#EBD48F] shadow-[var(--shadow-soft)]'
                     : 'bg-[#FAFAF8] border-[#E7E5E0] hover:bg-white'
                 }`}
               >

@@ -147,7 +147,7 @@ export const InventoryView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
         <div>
           <h2 className="text-lg font-bold text-[#111111]">Insumos y Bodega</h2>
           <p className="text-xs text-[#6B6B6B]">
@@ -165,7 +165,7 @@ export const InventoryView: React.FC = () => {
               }}
               className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
                 activeTab === 'stock'
-                  ? 'bg-white text-[#111111] shadow-xs'
+                  ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]'
                   : 'text-[#6B6B6B] hover:text-[#111111]'
               }`}
             >
@@ -179,7 +179,7 @@ export const InventoryView: React.FC = () => {
               }}
               className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
                 activeTab === 'expirations'
-                  ? 'bg-white text-[#111111] shadow-xs'
+                  ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]'
                   : 'text-[#6B6B6B] hover:text-[#111111]'
               }`}
             >

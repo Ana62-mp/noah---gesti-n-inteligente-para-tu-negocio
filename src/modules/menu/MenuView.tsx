@@ -47,7 +47,7 @@ export const MenuView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
         <div>
           <div className="flex items-center gap-2">
             <UtensilsCrossed className="w-5 h-5 text-[#CF6811]" />
@@ -82,7 +82,7 @@ export const MenuView: React.FC = () => {
               onClick={() => setFilterCategory(cat.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 filterCategory === cat.id
-                  ? 'bg-[#421A05] text-white shadow-xs'
+                  ? 'bg-[#421A05] text-white shadow-[var(--shadow-soft)]'
                   : 'bg-[#F5F4F1] text-[#6B6B6B] hover:text-[#111111]'
               }`}
             >
@@ -112,7 +112,7 @@ export const MenuView: React.FC = () => {
           return (
             <div
               key={dish.id}
-              className={`bg-white rounded-2xl border p-5 shadow-xs flex flex-col justify-between space-y-4 transition-all ${
+              className={`bg-white rounded-2xl border p-5 shadow-[var(--shadow-soft)] flex flex-col justify-between space-y-4 transition-all ${
                 dish.isAvailable ? 'border-[#E7E5E0] hover:border-[#D59F3F]' : 'border-[#E7E5E0] opacity-60'
               }`}
             >

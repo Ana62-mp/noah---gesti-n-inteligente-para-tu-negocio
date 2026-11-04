@@ -63,7 +63,7 @@ export const SettingsView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header & Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
         <div>
           <div className="flex items-center gap-2">
             <Settings className="w-5 h-5 text-[#CF6811]" />
@@ -78,7 +78,7 @@ export const SettingsView: React.FC = () => {
           <button
             onClick={() => setActiveTab('demo')}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'demo' ? 'bg-white text-[#111111] shadow-xs' : 'text-[#6B6B6B]'
+              activeTab === 'demo' ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]' : 'text-[#6B6B6B]'
             }`}
           >
             Controles Demo
@@ -86,7 +86,7 @@ export const SettingsView: React.FC = () => {
           <button
             onClick={() => setActiveTab('business')}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'business' ? 'bg-white text-[#111111] shadow-xs' : 'text-[#6B6B6B]'
+              activeTab === 'business' ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]' : 'text-[#6B6B6B]'
             }`}
           >
             Datos del negocio
@@ -94,7 +94,7 @@ export const SettingsView: React.FC = () => {
           <button
             onClick={() => setActiveTab('permissions')}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'permissions' ? 'bg-white text-[#111111] shadow-xs' : 'text-[#6B6B6B]'
+              activeTab === 'permissions' ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]' : 'text-[#6B6B6B]'
             }`}
           >
             Roles y permisos
@@ -102,7 +102,7 @@ export const SettingsView: React.FC = () => {
           <button
             onClick={() => setActiveTab('connectors')}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'connectors' ? 'bg-white text-[#111111] shadow-xs' : 'text-[#6B6B6B]'
+              activeTab === 'connectors' ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]' : 'text-[#6B6B6B]'
             }`}
           >
             Conectores previstos
@@ -113,7 +113,7 @@ export const SettingsView: React.FC = () => {
       {/* TAB 1: DEMO CONTROLS (CRITICAL FOR ACCEPTANCE CRITERIA) */}
       {activeTab === 'demo' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs space-y-6">
+          <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-6">
             <div className="border-b border-[#E7E5E0] pb-3">
               <h3 className="text-base font-bold text-[#111111]">
                 Panel de Control de la Presentación (Sandbox)
@@ -234,7 +234,7 @@ export const SettingsView: React.FC = () => {
 
       {/* TAB 2: BUSINESS INFO */}
       {activeTab === 'business' && (
-        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs max-w-2xl mx-auto space-y-4 text-xs">
+        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] max-w-2xl mx-auto space-y-4 text-xs">
           <div className="border-b border-[#E7E5E0] pb-3">
             <h3 className="text-base font-bold text-[#111111]">Datos Legales y Comerciales</h3>
             <p className="text-[#6B6B6B]">Configuración territorial y fiscal para Ecuador</p>
@@ -302,7 +302,7 @@ export const SettingsView: React.FC = () => {
 
       {/* TAB 3: ROLES & PERMISSIONS */}
       {activeTab === 'permissions' && (
-        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs space-y-4">
+        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-4">
           <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-3">
             <div>
               <h3 className="text-base font-bold text-[#111111]">
@@ -359,7 +359,7 @@ export const SettingsView: React.FC = () => {
 
       {/* TAB 4: CONNECTORS */}
       {activeTab === 'connectors' && (
-        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs space-y-4">
+        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-4">
           <div className="border-b border-[#E7E5E0] pb-3">
             <h3 className="text-base font-bold text-[#111111]">
               Estado de Conectores e Integraciones Previstas

@@ -102,9 +102,11 @@ export const OwnerDashboard: React.FC = () => {
       </div>
 
       {/* Row of 6 Key Financial & Operational MetricCards with Provenance */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+      <div className="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         <MetricCard
           title="Ventas de hoy"
+          tone="cinnamon"
+          icon={<TrendingUp className="w-4 h-4" />}
           value="$780,50"
           change={0.12}
           changePeriod="vs. martes anterior"
@@ -119,6 +121,8 @@ export const OwnerDashboard: React.FC = () => {
 
         <MetricCard
           title="Ventas semana"
+          tone="banana"
+          icon={<TrendingUp className="w-4 h-4" />}
           value="$2.140,00"
           change={0.092}
           changePeriod="vs. semana 44"
@@ -132,6 +136,8 @@ export const OwnerDashboard: React.FC = () => {
 
         <MetricCard
           title="Gastos del mes"
+          tone="terracotta"
+          icon={<Receipt className="w-4 h-4" />}
           value="$12.450,00"
           subtitle="Insumos + Op. de octubre"
           provenance={{
@@ -144,6 +150,8 @@ export const OwnerDashboard: React.FC = () => {
 
         <MetricCard
           title="Resultado est."
+          tone="olive"
+          icon={<TrendingUp className="w-4 h-4" />}
           value="$2.950,00"
           change={0.191}
           changePeriod="19.1% margen neto"
@@ -158,6 +166,8 @@ export const OwnerDashboard: React.FC = () => {
 
         <MetricCard
           title="Margen carta"
+          tone="harvest"
+          icon={<ChefHat className="w-4 h-4" />}
           value="56.8 %"
           subtitle="Promedio recetas"
           provenance={{
@@ -170,6 +180,8 @@ export const OwnerDashboard: React.FC = () => {
 
         <MetricCard
           title="Pedidos activos"
+          tone="banana"
+          icon={<Boxes className="w-4 h-4" />}
           value="15"
           subtitle="4 cocina · 8 salón · 3 delivery"
           provenance={{
@@ -183,7 +195,7 @@ export const OwnerDashboard: React.FC = () => {
       {/* Main Two-Column Layout (Desktop compact without scrolling) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Weekly Sales Comparison Chart */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs space-y-4">
+        <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E7E5E0] border-t-4 border-t-[#D59F3F] p-6 shadow-[var(--shadow-soft)] space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-base font-bold text-[#111111]">
@@ -226,7 +238,7 @@ export const OwnerDashboard: React.FC = () => {
                       <div
                         className={`w-3 sm:w-5 rounded-t-sm transition-all ${
                           d.actual > 0
-                            ? 'bg-[#CF6811] shadow-xs group-hover:bg-[#B85B0E]'
+                            ? 'bg-[#CF6811] shadow-[var(--shadow-soft)] group-hover:bg-[#B85B0E]'
                             : 'bg-transparent border border-dashed border-[#E7E5E0]'
                         }`}
                         style={{ height: d.actual > 0 ? `${actHeight}%` : '4%' }}
@@ -252,7 +264,7 @@ export const OwnerDashboard: React.FC = () => {
         </div>
 
         {/* Right Column: "Noah te avisa" (Proactive Alerts & Action buttons) */}
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs space-y-4">
+        <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E7E5E0] border-t-4 border-t-[#A43108] p-6 shadow-[var(--shadow-soft)] space-y-4">
           <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-3">
             <div className="flex items-center gap-2">
               <NoahOrb state="idle" size="sm" showRipples={false} />

@@ -147,7 +147,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
   };
 
   return (
-    <div className="min-h-screen bg-[#FBFBF9] flex flex-col antialiased">
+    <div className="min-h-screen bg-app flex flex-col antialiased">
       {/* 1. Top Ribbon: Prototype & Sample Data (Acceptance Criteria CA-14) */}
       <div className="bg-[#421A05] text-[#EBD48F] text-[11px] font-semibold py-1 px-4 text-center border-b border-[#D59F3F]/30 flex items-center justify-between z-40">
         <div className="flex items-center gap-1.5 mx-auto">
@@ -168,7 +168,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       <div className="flex-1 flex overflow-hidden">
         {/* 2. Sidebar Navigation (in Espresso #421A05) */}
         <aside
-          className={`fixed inset-y-0 left-0 z-40 w-64 bg-[#421A05] text-white flex flex-col justify-between transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-40 w-64 gradient-espresso text-white flex flex-col justify-between transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
@@ -220,7 +220,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                           isActive
-                            ? 'bg-[#CF6811] text-white shadow-sm'
+                            ? 'gradient-brand text-white shadow-md'
                             : 'text-white/80 hover:bg-white/10 hover:text-white'
                         }`}
                       >
@@ -275,7 +275,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         {/* 3. Main Workspace Area */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Top Bar Header */}
-          <header className="h-16 bg-white border-b border-[#E7E5E0] px-4 sm:px-6 flex items-center justify-between gap-4 z-30 shrink-0">
+          <header className="h-16 bg-white/85 backdrop-blur-md border-b border-[#EBD48F]/60 px-4 sm:px-6 flex items-center justify-between gap-4 z-30 shrink-0">
             {/* Left: Mobile menu button & breadcrumbs */}
             <div className="flex items-center gap-3">
               <button
@@ -385,7 +385,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           </header>
 
           {/* Main Scrollable Viewport */}
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <main key={activeSection} className="page-enter flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
             <div className="max-w-7xl mx-auto space-y-6">{children}</div>
           </main>
         </div>

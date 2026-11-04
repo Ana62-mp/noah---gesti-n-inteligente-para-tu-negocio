@@ -331,7 +331,7 @@ export const OnboardingWizard: React.FC = () => {
                   onClick={() => setSelectedRole(r.role)}
                   className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ${
                     selectedRole === r.role
-                      ? 'border-[#CF6811] bg-[#FBF6E6] shadow-xs'
+                      ? 'border-[#CF6811] bg-[#FBF6E6] shadow-[var(--shadow-soft)]'
                       : 'border-[#E7E5E0] bg-white hover:bg-[#FAFAF8]'
                   }`}
                 >

@@ -157,7 +157,7 @@ export const SalesView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header & Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
         <div>
           <h2 className="text-lg font-bold text-[#111111]">Ventas y Caja</h2>
           <p className="text-xs text-[#6B6B6B]">
@@ -171,7 +171,7 @@ export const SalesView: React.FC = () => {
               onClick={() => setActiveTab('sales')}
               className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
                 activeTab === 'sales'
-                  ? 'bg-white text-[#111111] shadow-xs'
+                  ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]'
                   : 'text-[#6B6B6B] hover:text-[#111111]'
               }`}
             >
@@ -181,7 +181,7 @@ export const SalesView: React.FC = () => {
               onClick={() => setActiveTab('closing')}
               className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
                 activeTab === 'closing'
-                  ? 'bg-white text-[#111111] shadow-xs'
+                  ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]'
                   : 'text-[#6B6B6B] hover:text-[#111111]'
               }`}
             >
@@ -204,7 +204,7 @@ export const SalesView: React.FC = () => {
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-[#E7E5E0] shadow-xs">
+            <div className="bg-white p-4 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
               <div className="flex items-center justify-between text-xs text-[#6B6B6B] mb-1">
                 <span>Total hoy (86 ventas)</span>
                 <Coins className="w-4 h-4 text-[#CF6811]" />
@@ -214,7 +214,7 @@ export const SalesView: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-[#E7E5E0] shadow-xs">
+            <div className="bg-white p-4 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
               <div className="flex items-center justify-between text-xs text-[#6B6B6B] mb-1">
                 <span>Efectivo caja</span>
                 <Coins className="w-4 h-4 text-[#5C5011]" />
@@ -224,7 +224,7 @@ export const SalesView: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-[#E7E5E0] shadow-xs">
+            <div className="bg-white p-4 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
               <div className="flex items-center justify-between text-xs text-[#6B6B6B] mb-1">
                 <span>Tarjetas Datafast</span>
                 <CreditCard className="w-4 h-4 text-[#CF6811]" />
@@ -234,7 +234,7 @@ export const SalesView: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-[#E7E5E0] shadow-xs">
+            <div className="bg-white p-4 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
               <div className="flex items-center justify-between text-xs text-[#6B6B6B] mb-1">
                 <span>Transferencias / DeUna</span>
                 <Building className="w-4 h-4 text-[#8A7424]" />
@@ -295,7 +295,7 @@ export const SalesView: React.FC = () => {
         </>
       ) : (
         /* Cierre de caja Tab */
-        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs max-w-2xl mx-auto space-y-6">
+        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] max-w-2xl mx-auto space-y-6">
           <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-4">
             <div>
               <h3 className="text-base font-bold text-[#111111]">Arqueo y Cierre del Día</h3>

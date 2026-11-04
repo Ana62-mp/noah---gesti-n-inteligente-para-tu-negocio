@@ -31,11 +31,11 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantClasses = {
     primary:
-      'bg-[#A43108] text-white hover:bg-[#8A2906] shadow-sm hover:shadow active:bg-[#722204]',
+      'gradient-primary text-white hover:brightness-110 shadow-sm hover:shadow-md active:brightness-95',
     secondary:
       'bg-white text-[#111111] border border-[#E7E5E0] hover:bg-[#F5F4F1] hover:border-[#D59F3F]/40 text-[#111111]',
     cinnamon:
-      'bg-[#CF6811] text-white hover:bg-[#B85B0E] shadow-sm hover:shadow active:bg-[#9B4C0A]',
+      'gradient-brand text-white hover:brightness-110 shadow-sm hover:shadow-md active:brightness-95',
     ghost:
       'bg-transparent text-[#111111] hover:bg-[#F5F4F1] active:bg-[#E7E5E0]',
     danger:

@@ -86,7 +86,7 @@ export const TablesView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header & Status Legend */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
         <div>
           <h2 className="text-lg font-bold text-[#111111]">Mesas y Salón</h2>
           <p className="text-xs text-[#6B6B6B]">

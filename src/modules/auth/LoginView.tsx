@@ -130,7 +130,7 @@ export const LoginView: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
               {/* Card 1: Restaurante La Sazón de Carlos */}
-              <div className="group bg-white hover:bg-white border border-[#E7E5E0] hover:border-[#CF6811] rounded-3xl p-5 sm:p-6 transition-all duration-200 shadow-xs hover:shadow-lg flex flex-col justify-between">
+              <div className="group bg-white hover:bg-white border border-[#E7E5E0] hover:border-[#CF6811] rounded-3xl p-5 sm:p-6 transition-all duration-200 shadow-[var(--shadow-soft)] hover:shadow-lg flex flex-col justify-between">
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="w-12 h-12 rounded-2xl bg-[#FBF6E6] border border-[#EBD48F] text-[#CF6811] flex items-center justify-center font-bold shadow-2xs">
@@ -201,7 +201,7 @@ export const LoginView: React.FC = () => {
               </div>
 
               {/* Card 2: Tienda de Barrio Doña Rosa */}
-              <div className="group bg-white hover:bg-white border border-[#E7E5E0] hover:border-[#5C5011] rounded-3xl p-5 sm:p-6 transition-all duration-200 shadow-xs hover:shadow-lg flex flex-col justify-between">
+              <div className="group bg-white hover:bg-white border border-[#E7E5E0] hover:border-[#5C5011] rounded-3xl p-5 sm:p-6 transition-all duration-200 shadow-[var(--shadow-soft)] hover:shadow-lg flex flex-col justify-between">
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="w-12 h-12 rounded-2xl bg-[#FBF6E6] border border-[#EBD48F] text-[#5C5011] flex items-center justify-center font-bold shadow-2xs">
@@ -257,7 +257,7 @@ export const LoginView: React.FC = () => {
               </div>
 
               {/* Card 3: Barber Kings */}
-              <div className="group bg-white hover:bg-white border border-[#E7E5E0] hover:border-[#D59F3F] rounded-3xl p-5 sm:p-6 transition-all duration-200 shadow-xs hover:shadow-lg flex flex-col justify-between">
+              <div className="group bg-white hover:bg-white border border-[#E7E5E0] hover:border-[#D59F3F] rounded-3xl p-5 sm:p-6 transition-all duration-200 shadow-[var(--shadow-soft)] hover:shadow-lg flex flex-col justify-between">
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="w-12 h-12 rounded-2xl bg-[#FBF6E6] border border-[#EBD48F] text-[#8A7424] flex items-center justify-center font-bold shadow-2xs">
@@ -413,7 +413,7 @@ export const LoginView: React.FC = () => {
         )}
 
         {/* Onboarding / Account Creation Banner */}
-        <div className="mt-8 sm:mt-10 bg-[#FBF6E6] border border-[#EBD48F] rounded-3xl p-5 sm:p-7 text-center max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-5 shadow-xs">
+        <div className="mt-8 sm:mt-10 bg-[#FBF6E6] border border-[#EBD48F] rounded-3xl p-5 sm:p-7 text-center max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-5 shadow-[var(--shadow-soft)]">
           <div className="text-left">
             <div className="flex items-center gap-2 mb-1.5">
               <Sparkles className="w-4 h-4 text-[#CF6811] shrink-0" />

@@ -197,7 +197,7 @@ export const NoahVoiceScenarios: React.FC = () => {
           onClick={() => setActiveScenario('A')}
           className={`flex-1 min-w-[200px] py-2.5 px-4 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-2 ${
             activeScenario === 'A'
-              ? 'bg-white text-[#111111] shadow-xs'
+              ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]'
               : 'text-[#6B6B6B] hover:text-[#111111]'
           }`}
         >
@@ -209,7 +209,7 @@ export const NoahVoiceScenarios: React.FC = () => {
           onClick={() => setActiveScenario('B')}
           className={`flex-1 min-w-[200px] py-2.5 px-4 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-2 ${
             activeScenario === 'B'
-              ? 'bg-white text-[#111111] shadow-xs'
+              ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]'
               : 'text-[#6B6B6B] hover:text-[#111111]'
           }`}
         >
@@ -221,7 +221,7 @@ export const NoahVoiceScenarios: React.FC = () => {
           onClick={() => setActiveScenario('C')}
           className={`flex-1 min-w-[200px] py-2.5 px-4 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-2 ${
             activeScenario === 'C'
-              ? 'bg-white text-[#111111] shadow-xs'
+              ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]'
               : 'text-[#6B6B6B] hover:text-[#111111]'
           }`}
         >
@@ -234,7 +234,7 @@ export const NoahVoiceScenarios: React.FC = () => {
       {activeScenario === 'A' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Live Audio Transcription */}
-          <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs flex flex-col space-y-4">
+          <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] flex flex-col space-y-4">
             <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-4">
               <div>
                 <h3 className="text-base font-bold text-[#111111]">
@@ -346,7 +346,7 @@ export const NoahVoiceScenarios: React.FC = () => {
           </div>
 
           {/* Right Column: Detected Order Draft */}
-          <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs flex flex-col space-y-4">
+          <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] flex flex-col space-y-4">
             <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-3">
               <div>
                 <span className="text-xs font-bold text-[#A43108] uppercase tracking-wider">
@@ -449,7 +449,7 @@ export const NoahVoiceScenarios: React.FC = () => {
 
       {/* ================= ESCENARIO B ================= */}
       {activeScenario === 'B' && (
-        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs max-w-3xl mx-auto space-y-6">
+        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] max-w-3xl mx-auto space-y-6">
           <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-4">
             <div>
               <h3 className="text-base font-bold text-[#111111]">
@@ -513,7 +513,7 @@ export const NoahVoiceScenarios: React.FC = () => {
                       onClick={() => setSelectedBTime(time)}
                       className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
                         selectedBTime === time
-                          ? 'bg-[#CF6811] text-white border-[#CF6811] shadow-xs'
+                          ? 'bg-[#CF6811] text-white border-[#CF6811] shadow-[var(--shadow-soft)]'
                           : 'bg-[#F5F4F1] text-[#111111] border-[#E7E5E0] hover:bg-[#FBF6E6]'
                       }`}
                     >
@@ -568,7 +568,7 @@ export const NoahVoiceScenarios: React.FC = () => {
 
       {/* ================= ESCENARIO C ================= */}
       {activeScenario === 'C' && (
-        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs max-w-2xl mx-auto space-y-6">
+        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] max-w-2xl mx-auto space-y-6">
           <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-4">
             <div>
               <h3 className="text-base font-bold text-[#111111]">Registro asistido de gasto por voz</h3>

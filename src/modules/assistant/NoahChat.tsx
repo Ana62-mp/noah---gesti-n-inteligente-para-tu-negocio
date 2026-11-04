@@ -335,7 +335,7 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
                 <div className="flex flex-col space-y-2">
                   {/* Chat bubble */}
                   <div
-                    className={`rounded-2xl p-4 text-sm leading-relaxed shadow-xs ${
+                    className={`rounded-2xl p-4 text-sm leading-relaxed shadow-[var(--shadow-soft)] ${
                       isUser
                         ? 'bg-[#421A05] text-white rounded-tr-xs'
                         : 'bg-[#FBF6E6] text-[#111111] border border-[#EBD48F]/60 rounded-tl-xs'
@@ -349,7 +349,7 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
                         {msg.cards.map((card, idx) => (
                           <div
                             key={idx}
-                            className="bg-white rounded-xl p-3 border border-[#EBD48F] shadow-xs text-xs text-[#111111]"
+                            className="bg-white rounded-xl p-3 border border-[#EBD48F] shadow-[var(--shadow-soft)] text-xs text-[#111111]"
                           >
                             <div className="font-bold text-[#421A05] mb-2 flex items-center justify-between">
                               <span>{card.title}</span>

@@ -48,7 +48,7 @@ export const ReportsView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
         <div>
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-[#CF6811]" />
@@ -64,7 +64,7 @@ export const ReportsView: React.FC = () => {
             <button
               onClick={() => setPeriod('month')}
               className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                period === 'month' ? 'bg-white text-[#111111] shadow-xs' : 'text-[#6B6B6B]'
+                period === 'month' ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]' : 'text-[#6B6B6B]'
               }`}
             >
               Octubre
@@ -72,7 +72,7 @@ export const ReportsView: React.FC = () => {
             <button
               onClick={() => setPeriod('quarter')}
               className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                period === 'quarter' ? 'bg-white text-[#111111] shadow-xs' : 'text-[#6B6B6B]'
+                period === 'quarter' ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]' : 'text-[#6B6B6B]'
               }`}
             >
               Trimestre
@@ -102,7 +102,7 @@ export const ReportsView: React.FC = () => {
       {/* Main Grid: Margin Ranking | Expense Donut */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left: Dish Margin Ranking Bar Chart */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs space-y-4">
+        <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-4">
           <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-3">
             <div>
               <h3 className="text-base font-bold text-[#111111]">Ranking de Margen Bruto por Plato</h3>
@@ -152,7 +152,7 @@ export const ReportsView: React.FC = () => {
 
         {/* Right: Expenses Breakdown & Noah Analysis */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs space-y-4">
+          <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-4">
             <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-3">
               <h3 className="text-base font-bold text-[#111111]">Distribución de Egresos</h3>
               <span className="text-xs font-mono font-bold text-[#A43108]">$12.450,00</span>

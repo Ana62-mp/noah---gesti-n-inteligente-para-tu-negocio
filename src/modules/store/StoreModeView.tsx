@@ -57,7 +57,7 @@ export const StoreModeView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Plan Básico Banner */}
-      <div className="bg-[#FBF6E6] border border-[#EBD48F] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+      <div className="bg-[#FBF6E6] border border-[#EBD48F] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[var(--shadow-soft)]">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#EBD48F] flex items-center justify-center text-[#421A05] font-extrabold text-sm shrink-0">
             PB
@@ -86,7 +86,7 @@ export const StoreModeView: React.FC = () => {
 
       {/* 3 Large KPI Cards (Simplificación visible) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="bg-white rounded-3xl p-6 border border-[#E7E5E0] shadow-xs flex flex-col justify-between">
+        <div className="bg-white rounded-3xl p-6 border border-[#E7E5E0] shadow-[var(--shadow-soft)] flex flex-col justify-between">
           <span className="text-xs font-bold uppercase tracking-wider text-[#5C5011]">
             Ingresos del Mes (Octubre)
           </span>
@@ -96,7 +96,7 @@ export const StoreModeView: React.FC = () => {
           <div className="text-xs text-[#6B6B6B]">Ventas de mostrador y cobros DeUna</div>
         </div>
 
-        <div className="bg-white rounded-3xl p-6 border border-[#E7E5E0] shadow-xs flex flex-col justify-between">
+        <div className="bg-white rounded-3xl p-6 border border-[#E7E5E0] shadow-[var(--shadow-soft)] flex flex-col justify-between">
           <span className="text-xs font-bold uppercase tracking-wider text-[#A43108]">
             Egresos del Mes (Compras)
           </span>
@@ -106,7 +106,7 @@ export const StoreModeView: React.FC = () => {
           <div className="text-xs text-[#6B6B6B]">20 facturas y notas de venta de proveedores</div>
         </div>
 
-        <div className="bg-[#FBF6E6] rounded-3xl p-6 border border-[#EBD48F] shadow-xs flex flex-col justify-between">
+        <div className="bg-[#FBF6E6] rounded-3xl p-6 border border-[#EBD48F] shadow-[var(--shadow-soft)] flex flex-col justify-between">
           <span className="text-xs font-bold uppercase tracking-wider text-[#421A05]">
             Resultado Aproximado
           </span>
@@ -149,7 +149,7 @@ export const StoreModeView: React.FC = () => {
       </div>
 
       {/* Noah's Store Insight */}
-      <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <NoahOrb state="idle" size="md" />
           <div>
@@ -173,7 +173,7 @@ export const StoreModeView: React.FC = () => {
       </div>
 
       {/* Recent Supplier Receipts Table */}
-      <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-xs space-y-4">
+      <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-4">
         <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-3">
           <div>
             <h3 className="text-base font-bold text-[#111111]">

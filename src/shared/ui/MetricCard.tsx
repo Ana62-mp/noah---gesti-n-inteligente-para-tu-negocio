@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 import { ArrowUpRight, ArrowDownRight, HelpCircle, Info } from 'lucide-react';
 
+export type MetricTone = 'cinnamon' | 'banana' | 'olive' | 'terracotta' | 'harvest';
+
+const TONE_STYLES: Record<MetricTone, { bar: string; chip: string }> = {
+  cinnamon: { bar: 'bg-[#CF6811]', chip: 'bg-[#FCEFE3] text-[#CF6811]' },
+  banana: { bar: 'bg-[#D59F3F]', chip: 'bg-[#FBF1DC] text-[#8A6310]' },
+  olive: { bar: 'bg-[#5C5011]', chip: 'bg-[#EEEBD6] text-[#5C5011]' },
+  terracotta: { bar: 'bg-[#A43108]', chip: 'bg-[#F8E4DD] text-[#A43108]' },
+  harvest: { bar: 'bg-[#8A7424]', chip: 'bg-[#F3EEDA] text-[#8A7424]' },
+};
+
 interface MetricCardProps {
   title: string;
   value: string;
@@ -15,6 +25,7 @@ interface MetricCardProps {
   highlight?: boolean;
   icon?: React.ReactNode;
   subtitle?: string;
+  tone?: MetricTone;
 }
 
 export const MetricCard: React.FC<MetricCardProps> = ({
@@ -26,6 +37,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   highlight = false,
   icon,
   subtitle,
+  tone = 'cinnamon',
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -34,18 +46,23 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
   return (
     <div
-      className={`relative rounded-2xl p-4 sm:p-5 transition-all duration-200 border overflow-hidden ${
+      className={`relative rounded-2xl p-4 sm:p-5 card-lift border overflow-hidden ${
         highlight
           ? 'bg-[#FBF6E6] border-[#EBD48F] shadow-sm'
           : 'bg-white border-[#E7E5E0] hover:border-[#D59F3F]/40 shadow-xs'
       }`}
     >
+      <div className={`absolute inset-x-0 top-0 h-1 ${TONE_STYLES[tone].bar}`} />
       <div className="flex items-center justify-between gap-2 mb-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-[#6B6B6B] truncate" title={title}>
           {title}
         </span>
         <div className="flex items-center gap-1 shrink-0">
-          {icon && <span className="text-[#CF6811]">{icon}</span>}
+          {icon && (
+            <span className={`w-7 h-7 rounded-lg flex items-center justify-center ${TONE_STYLES[tone].chip}`}>
+              {icon}
+            </span>
+          )}
           {provenance && (
             <div className="relative">
               <button

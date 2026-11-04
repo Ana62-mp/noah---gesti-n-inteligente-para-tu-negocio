@@ -57,7 +57,7 @@ export const MobilePreviewView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
         <div>
           <div className="flex items-center gap-2">
             <Smartphone className="w-5 h-5 text-[#CF6811]" />
@@ -94,7 +94,7 @@ export const MobilePreviewView: React.FC = () => {
         {/* Left Column: Business Decision Cards & Role Switcher */}
         <div className="lg:col-span-5 space-y-6">
           {/* Profile Switcher */}
-          <div className="bg-white rounded-2xl border border-[#E7E5E0] p-5 shadow-xs space-y-3">
+          <div className="bg-white rounded-2xl border border-[#E7E5E0] p-5 shadow-[var(--shadow-soft)] space-y-3">
             <span className="text-xs font-bold text-[#6B6B6B] uppercase tracking-wider">
               1. Selecciona el perfil para interactuar en el celular:
             </span>
@@ -112,7 +112,7 @@ export const MobilePreviewView: React.FC = () => {
                   }}
                   className={`p-3 rounded-xl border text-left transition-all ${
                     profile === p.id
-                      ? 'bg-[#FBF6E6] border-[#CF6811] shadow-xs'
+                      ? 'bg-[#FBF6E6] border-[#CF6811] shadow-[var(--shadow-soft)]'
                       : 'bg-white border-[#E7E5E0] hover:bg-[#FAFAF8]'
                   }`}
                 >
@@ -130,7 +130,7 @@ export const MobilePreviewView: React.FC = () => {
             </span>
 
             {/* Card 1: Web Adaptable */}
-            <div className="bg-white rounded-2xl border border-[#E7E5E0] p-5 shadow-xs space-y-2">
+            <div className="bg-white rounded-2xl border border-[#E7E5E0] p-5 shadow-[var(--shadow-soft)] space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 font-bold text-sm text-[#111111]">
                   <Globe className="w-4 h-4 text-[#5C5011]" />
@@ -145,7 +145,7 @@ export const MobilePreviewView: React.FC = () => {
             </div>
 
             {/* Card 2: App Móvil Nativa */}
-            <div className="bg-white rounded-2xl border border-[#E7E5E0] p-5 shadow-xs space-y-2">
+            <div className="bg-white rounded-2xl border border-[#E7E5E0] p-5 shadow-[var(--shadow-soft)] space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 font-bold text-sm text-[#111111]">
                   <Smartphone className="w-4 h-4 text-[#CF6811]" />
@@ -238,7 +238,7 @@ export const MobilePreviewView: React.FC = () => {
                     </div>
 
                     {/* Big Center Noah Voice Orb */}
-                    <div className="flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-[#E7E5E0] shadow-xs text-center space-y-2">
+                    <div className="flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)] text-center space-y-2">
                       <NoahOrb state="idle" size="lg" onClick={() => showToast('Escuchando voz en móvil…', 'info')} />
                       <div className="font-bold text-xs mt-2 text-[#421A05]">
                         Toca el orbe para hablar

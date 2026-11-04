@@ -68,7 +68,7 @@ export const AlertsView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
         <div>
           <div className="flex items-center gap-2">
             <BellRing className="w-5 h-5 text-[#CF6811]" />
@@ -113,7 +113,7 @@ export const AlertsView: React.FC = () => {
           return (
             <div
               key={alert.id}
-              className={`rounded-2xl border p-5 shadow-xs transition-all space-y-3 ${severityStyles.border}`}
+              className={`rounded-2xl border p-5 shadow-[var(--shadow-soft)] transition-all space-y-3 ${severityStyles.border}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
