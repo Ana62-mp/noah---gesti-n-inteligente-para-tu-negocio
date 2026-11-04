@@ -1,3 +1,4 @@
+import { DeliveryStatusSummary } from './DeliveryStatusSummary';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
 import { apiService } from '../../shared/services/apiService';
@@ -91,6 +92,8 @@ export const DeliveryView: React.FC = () => {
           Nuevo pedido para llevar
         </Button>
       </div>
+
+      <DeliveryStatusSummary orders={orders} />
 
       {/* Integration Disclaimer Banner (RN-09 & CA-09) */}
       <div className="bg-[#FBF6E6] border border-[#EBD48F] rounded-2xl p-4 flex items-start gap-3">
