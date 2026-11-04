@@ -16,7 +16,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   subtitle,
   children,
-  maxWidth = 'md',
+  maxWidth = 'lg',
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -37,34 +37,35 @@ export const Modal: React.FC<ModalProps> = ({
   }[maxWidth];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-[#111111]/50 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-[#2A1103]/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
       {/* Dialog card */}
       <div
-        className={`relative z-10 w-full ${widthClasses} bg-white rounded-2xl shadow-2xl border border-[#E7E5E0] overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95`}
+        className={`relative z-10 w-full ${widthClasses} bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-[#EBD48F]/60 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[88vh] page-enter`}
       >
+        <div className="h-1.5 w-full gradient-brand shrink-0" />
         {(title || subtitle) && (
-          <div className="flex items-start justify-between p-5 border-b border-[#E7E5E0] bg-[#FAFAF8]">
+          <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-[#EBD48F]/50 bg-[#FBF6E6]/70">
             <div>
-              {title && <h3 className="text-base font-bold text-[#111111]">{title}</h3>}
+              {title && <h3 className="text-lg font-display font-extrabold text-[#421A05] leading-tight">{title}</h3>}
               {subtitle && <p className="text-xs text-[#6B6B6B] mt-0.5">{subtitle}</p>}
             </div>
             <button
               onClick={onClose}
-              className="text-[#6B6B6B] hover:text-[#111111] p-1 rounded-lg hover:bg-[#E7E5E0]/50 transition-colors"
+              className="shrink-0 w-10 h-10 flex items-center justify-center text-[#6B6B6B] hover:text-[#111111] rounded-xl hover:bg-[#EBD48F]/40 transition-colors"
               aria-label="Cerrar modal"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         )}
 
-        <div className="p-5 overflow-y-auto">{children}</div>
+        <div className="px-6 py-5 overflow-y-auto overflow-x-hidden">{children}</div>
       </div>
     </div>
   );

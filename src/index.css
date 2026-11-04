@@ -121,11 +121,11 @@ body {
 }
 
 .page-enter {
-  animation: rise-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: rise-in 380ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 .stagger > * {
-  animation: rise-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: rise-in 420ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 .stagger > *:nth-child(1) { animation-delay: 40ms; }
 .stagger > *:nth-child(2) { animation-delay: 100ms; }
