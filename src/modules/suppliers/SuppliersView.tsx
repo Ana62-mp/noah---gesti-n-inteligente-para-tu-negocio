@@ -1,6 +1,7 @@
 import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { useListParams } from '../../shared/hooks/useListParams';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
 import { Supplier } from '../../shared/types';
 import { PaginatedTable, Column } from '../../shared/ui/PaginatedTable';
@@ -29,9 +30,7 @@ export const SuppliersView: React.FC = () => {
     totalPages: 0,
   });
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [search, setSearch] = useState('');
+  const { page, pageSize, search, setPage, setPageSize, setSearch } = useListParams();
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
@@ -126,26 +125,15 @@ export const SuppliersView: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-        <div>
-          <div className="flex items-center gap-2">
-            <Truck className="w-5 h-5 text-[#CF6811]" />
-            <h2 className="text-lg font-bold text-[#111111]">Directorio de Proveedores</h2>
-          </div>
-          <p className="text-xs text-[#6B6B6B]">
-            Historial de compras, contactos comerciales y monitoreo de alzas de precios.
-          </p>
-        </div>
-
-        <input
+      <div className="flex flex-wrap items-center justify-end gap-2">
+<input
           type="text"
-          placeholder="Buscar proveedor o insumo…"
+          placeholder="Buscar proveedor…"
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
-            setPage(1);
           }}
           className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-3 py-1.5 text-xs text-[#111111] focus:outline-none focus:ring-1 focus:ring-[#CF6811] w-56"
         />
@@ -162,7 +150,6 @@ export const SuppliersView: React.FC = () => {
         onPageChange={setPage}
         onPageSizeChange={(newSize) => {
           setPageSize(newSize);
-          setPage(1);
         }}
         isLoading={isLoading}
             error={loadError}
@@ -179,7 +166,7 @@ export const SuppliersView: React.FC = () => {
           title={selectedSupplier.name}
           subtitle={`Proveedor de ${selectedSupplier.city}`}
         >
-          <div className="space-y-6 text-xs">
+          <div className="space-y-3 text-xs">
             {/* Contact Card */}
             <div className="p-4 bg-[#FAFAF8] rounded-xl border border-[#E7E5E0] space-y-2">
               <div className="font-bold text-[#111111] text-sm">Contacto Comercial</div>

@@ -1,7 +1,8 @@
 import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
-import { canCreateDraft } from '../../shared/permissions/rolePermissions';
+import { useListParams } from '../../shared/hooks/useListParams';
+import { getBusinessProfile } from '../../shared/business/businessProfiles';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
 import { Ingredient } from '../../shared/types';
 import { PaginatedTable, Column } from '../../shared/ui/PaginatedTable';
@@ -22,8 +23,9 @@ import {
 type MovementType = 'entry' | 'consumption' | 'adjustment' | 'waste';
 
 export const InventoryView: React.FC = () => {
-  const { showToast, setActiveSection, currentRole } = useApp();
-  const canSuggestPromo = canCreateDraft(currentRole, 'promo');
+  const { showToast, setActiveSection, currentRole, currentBusiness } = useApp();
+  const canSuggestPromo = currentRole === 'owner';
+  const { vocabulary } = getBusinessProfile(currentBusiness.type);
   const [activeTab, setActiveTab] = useState<'stock' | 'movements' | 'expirations'>('stock');
 
   const [ingredientsResult, setIngredientsResult] = useState<PaginatedResult<Ingredient>>({
@@ -34,10 +36,7 @@ export const InventoryView: React.FC = () => {
     totalPages: 0,
   });
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [filter, setFilter] = useState('all');
-  const [search, setSearch] = useState('');
+  const { page, pageSize, filter, search, setPage, setPageSize, setFilter, setSearch } = useListParams('all');
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -89,7 +88,7 @@ export const InventoryView: React.FC = () => {
 
   const columns: Column<Ingredient>[] = [
     {
-      header: 'Insumo / Ubicación',
+      header: vocabulary.inventoryColumn,
       accessor: (ing) => (
         <div>
           <div className="font-bold text-[#111111] text-xs">{ing.name}</div>
@@ -152,17 +151,10 @@ export const InventoryView: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-        <div>
-          <h2 className="text-lg font-bold text-[#111111]">Insumos y Bodega</h2>
-          <p className="text-xs text-[#6B6B6B]">
-            Control de materias primas, alertas de merma, caducidades y consumos teóricos.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+<div className="flex items-center gap-3">
           <div className="flex items-center p-1 bg-[#F5F4F1] rounded-xl border border-[#E7E5E0]">
             <button
               onClick={() => {
@@ -190,7 +182,7 @@ export const InventoryView: React.FC = () => {
                   : 'text-[#6B6B6B] hover:text-[#111111]'
               }`}
             >
-              Vencimientos y Merma
+              {vocabulary.expiringTab}
             </button>
           </div>
 
@@ -210,8 +202,7 @@ export const InventoryView: React.FC = () => {
         <div className="flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-[#CF6811] shrink-0 mt-0.5" />
           <div className="text-xs text-[#421A05] leading-relaxed">
-            <strong className="font-bold">Alerta de Sobrestock Crítico:</strong> 5 pollos enteros (≈ 13 kg)
-            vencen mañana y 3 kg de limón sutil en 2 días.{canSuggestPromo && ' Noah sugiere activar la promo 2x1 en seco de pollo.'}
+            <strong className="font-bold">Atención:</strong> {vocabulary.stockBanner}
           </div>
         </div>
 
@@ -233,7 +224,6 @@ export const InventoryView: React.FC = () => {
             value={filter}
             onChange={(e) => {
               setFilter(e.target.value);
-              setPage(1);
             }}
             className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-2.5 py-1 text-xs text-[#111111] focus:outline-none"
           >
@@ -251,7 +241,6 @@ export const InventoryView: React.FC = () => {
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
-            setPage(1);
           }}
           className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-3 py-1 text-xs text-[#111111] focus:outline-none focus:ring-1 focus:ring-[#CF6811] w-52"
         />
@@ -268,7 +257,6 @@ export const InventoryView: React.FC = () => {
         onPageChange={setPage}
         onPageSizeChange={(newSize) => {
           setPageSize(newSize);
-          setPage(1);
         }}
         isLoading={isLoading}
             error={loadError}

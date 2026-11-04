@@ -6,7 +6,6 @@ import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
 import { Modal } from '../../shared/ui/Modal';
 import { formatCurrency } from '../../shared/utils/formatters';
-import { canAccessSection, canChargeTables } from '../../shared/permissions/rolePermissions';
 import {
   Grid3X3,
   Users,
@@ -27,9 +26,9 @@ const TABLE_STATUS_LABELS: Record<TableItem['status'], string> = {
 };
 
 export const TablesView: React.FC = () => {
-  const { showToast, setActiveSection, currentRole } = useApp();
-  const canCharge = canChargeTables(currentRole);
-  const canUseVoice = canAccessSection(currentRole, 'voice_scenarios');
+  const { showToast, setActiveSection, canAccess } = useApp();
+  const canCharge = canAccess('sales');
+  const canUseVoice = canAccess('voice_scenarios');
   const [tables, setTables] = useState<TableItem[]>([]);
   const [selectedTable, setSelectedTable] = useState<TableItem | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -97,17 +96,10 @@ export const TablesView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Top Header & Status Legend */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-        <div>
-          <h2 className="text-lg font-bold text-[#111111]">Mesas y Salón</h2>
-          <p className="text-xs text-[#6B6B6B]">
-            Distribución en vivo de comensales, tiempos transcurridos y cobro de cuentas.
-          </p>
-        </div>
-
-        {/* Legend with color + icon + text (constitucional) */}
+      <div className="flex flex-wrap items-center justify-end gap-2">
+{/* Legend with color + icon + text (constitucional) */}
         <div className="flex items-center gap-2 flex-wrap text-xs">
           <Badge variant="neutral">Libre</Badge>
           <Badge variant="banana">Pidiendo</Badge>
@@ -117,7 +109,7 @@ export const TablesView: React.FC = () => {
       </div>
 
       {/* Tables 12-Grid Layout */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6 gap-3">
         {tables.map((t) => {
           const statusConfig = {
             free: {
@@ -146,7 +138,7 @@ export const TablesView: React.FC = () => {
             <div
               key={t.id}
               onClick={() => handleOpenTable(t)}
-              className={`p-4 sm:p-5 rounded-2xl border card-lift cursor-pointer relative flex flex-col overflow-hidden ${statusConfig.border}`}
+              className={`p-3 rounded-2xl border card-lift cursor-pointer relative flex flex-col overflow-hidden ${statusConfig.border}`}
             >
               <div className="flex items-start justify-between mb-3">
                 <span className="font-display font-extrabold text-base text-[#111111]">
@@ -157,7 +149,7 @@ export const TablesView: React.FC = () => {
                 </Badge>
               </div>
 
-              <div className="space-y-1.5 text-xs text-[#6B6B6B] mb-4">
+              <div className="space-y-1 text-xs text-[#6B6B6B] mb-2">
                 <div className="flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 shrink-0" />
                   <span>Capacidad: {t.capacity} personas</span>

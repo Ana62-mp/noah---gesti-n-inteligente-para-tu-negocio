@@ -5,7 +5,11 @@ import { Dish } from '../../shared/types';
 import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
 import { formatCurrency, formatPercent } from '../../shared/utils/formatters';
-import { canEditMenu, canViewDishCosts } from '../../shared/permissions/rolePermissions';
+import { usePagedList } from '../../shared/hooks/usePagedList';
+import { Pagination } from '../../shared/ui/Pagination';
+import { ErrorState } from '../../shared/ui/ErrorState';
+import { EmptyState } from '../../shared/ui/EmptyState';
+import { SkeletonLoader } from '../../shared/ui/SkeletonLoader';
 import {
   UtensilsCrossed,
   Calculator,
@@ -15,55 +19,26 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
+const DISHES_PER_PAGE = 12;
+const PAGE_SIZES = [12, 24, 48];
+
 export const MenuView: React.FC = () => {
-  const { setActiveSection, showToast, currentRole } = useApp();
-  const canSeeCosts = canViewDishCosts(currentRole);
-  const canEdit = canEditMenu(currentRole);
-  const [dishes, setDishes] = useState<Dish[]>([]);
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    loadDishes();
-  }, []);
-
-  const loadDishes = async () => {
-    const data = await apiService.getDishes();
-    setDishes(data);
-  };
+  const { setActiveSection, showToast, currentRole, canAccess } = useApp();
+  const canSeeCosts = canAccess('costing');
+  const canEdit = currentRole === 'owner';
+  const list = usePagedList((params) => apiService.getDishesPage(params), 'all', DISHES_PER_PAGE);
 
   const handleToggleAvailability = async (dishId: string) => {
     await apiService.toggleDishAvailability(dishId);
     showToast('Disponibilidad actualizada en cocina y carta', 'info');
-    loadDishes();
+    list.reload();
   };
 
-  const filteredDishes = dishes.filter((d) => {
-    const matchesCat = filterCategory === 'all' || d.category === filterCategory;
-    const matchesSearch =
-      !searchTerm ||
-      d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.description.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCat && matchesSearch;
-  });
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-        <div>
-          <div className="flex items-center gap-2">
-            <UtensilsCrossed className="w-5 h-5 text-[#CF6811]" />
-            <h2 className="text-lg font-bold text-[#111111]">Carta y Menú</h2>
-          </div>
-          <p className="text-xs text-[#6B6B6B]">
-            {canSeeCosts
-              ? '25 platos ecuatorianos con recetas costeadas, márgenes brutos y disponibilidad.'
-              : 'Platos, precios de venta y disponibilidad de hoy.'}
-          </p>
-        </div>
-
-        {canSeeCosts && (
+      <div className="flex flex-wrap items-center justify-end gap-2">
+{canSeeCosts && (
           <div className="flex items-center gap-2">
             <Badge variant="olive">Verde ≥ 50%</Badge>
             <Badge variant="banana">Banana 30–50%</Badge>
@@ -86,9 +61,9 @@ export const MenuView: React.FC = () => {
           ].map((cat) => (
             <button
               key={cat.id}
-              onClick={() => setFilterCategory(cat.id)}
+              onClick={() => list.setFilter(cat.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                filterCategory === cat.id
+                list.filter === cat.id
                   ? 'bg-[#421A05] text-white shadow-[var(--shadow-soft)]'
                   : 'bg-[#F5F4F1] text-[#6B6B6B] hover:text-[#111111]'
               }`}
@@ -102,16 +77,21 @@ export const MenuView: React.FC = () => {
           <input
             type="text"
             placeholder="Buscar plato…"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={list.search}
+            onChange={(e) => list.setSearch(e.target.value)}
             className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-3 py-1.5 text-xs text-[#111111] focus:outline-none focus:ring-1 focus:ring-[#CF6811] w-48"
           />
         </div>
       </div>
 
       {/* Dishes Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredDishes.map((dish) => {
+      {list.error && <ErrorState message={list.error} onRetry={list.reload} />}
+      {list.isLoading && <SkeletonLoader rows={4} cols={3} />}
+      {!list.isLoading && !list.error && list.result.total === 0 && (
+        <EmptyState title="Sin platos para mostrar" description="Prueba con otra categoría o búsqueda." />
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        {!list.isLoading && list.result.items.map((dish) => {
           const margin = dish.grossMargin * 100;
           const badgeVariant =
             margin >= 50 ? 'olive' : margin >= 30 ? 'banana' : 'terracotta';
@@ -119,7 +99,7 @@ export const MenuView: React.FC = () => {
           return (
             <div
               key={dish.id}
-              className={`bg-white rounded-2xl border p-5 shadow-[var(--shadow-soft)] flex flex-col justify-between space-y-4 transition-all ${
+              className={`bg-white rounded-2xl border p-4 shadow-[var(--shadow-soft)] flex flex-col justify-between space-y-2.5 transition-all ${
                 dish.isAvailable ? 'border-[#E7E5E0] hover:border-[#D59F3F]' : 'border-[#E7E5E0] opacity-60'
               }`}
             >
@@ -200,6 +180,19 @@ export const MenuView: React.FC = () => {
           );
         })}
       </div>
+      {list.result.total > 0 && (
+        <div className="rounded-xl overflow-hidden border border-[#E7E5E0]">
+          <Pagination
+            page={list.result.page}
+            pageSize={list.result.pageSize}
+            total={list.result.total}
+            totalPages={list.result.totalPages}
+            onPageChange={list.setPage}
+            onPageSizeChange={list.setPageSize}
+            sizes={PAGE_SIZES}
+          />
+        </div>
+      )}
     </div>
   );
 };

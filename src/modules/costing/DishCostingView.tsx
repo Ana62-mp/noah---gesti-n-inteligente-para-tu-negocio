@@ -90,20 +90,10 @@ export const DishCostingView: React.FC = () => {
   if (!currentDish) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Top Header & Dish Picker */}
-      <div className="bg-white rounded-2xl border border-[#E7E5E0] p-5 shadow-[var(--shadow-soft)] flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Calculator className="w-5 h-5 text-[#CF6811]" />
-            <h2 className="text-lg font-bold text-[#111111]">Ficha de Receta y Costeo Gastronómico</h2>
-          </div>
-          <p className="text-xs text-[#6B6B6B]">
-            Calcula el costo real de preparación plato por plato y simula variaciones de insumos y precios.
-          </p>
-        </div>
-
-        {/* Dish Selector Dropdown */}
+      <div className="flex flex-wrap items-center justify-end gap-2">
+{/* Dish Selector Dropdown */}
         <div className="flex items-center gap-3">
           <label className="text-xs font-semibold text-[#6B6B6B] whitespace-nowrap">Plato:</label>
           <select
@@ -121,9 +111,9 @@ export const DishCostingView: React.FC = () => {
       </div>
 
       {/* Main Split Layout: Left Table | Right Simulator */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
         {/* Left Column: Ingredients Table & Formula */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-4">
+        <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)] space-y-4">
           <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-3">
             <div>
               <h3 className="text-base font-bold text-[#111111]">{currentDish.name}</h3>
@@ -224,7 +214,7 @@ export const DishCostingView: React.FC = () => {
         </div>
 
         {/* Right Column: Live Simulator & Circular Gauge */}
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-6">
+        <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)] space-y-3">
           <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-3">
             <h3 className="text-base font-bold text-[#111111]">Simulador en vivo</h3>
             <span className="text-[11px] text-[#6B6B6B]">Recálculo automático</span>

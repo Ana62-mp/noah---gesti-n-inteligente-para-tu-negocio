@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { formatCurrency } from '../../shared/utils/formatters';
 import { speechService } from '../../shared/services/speechService';
-import { canAccessSection, getVoiceScenariosForRole } from '../../shared/permissions/rolePermissions';
+import { getBusinessProfile } from '../../shared/business/businessProfiles';
+import { VoiceScenarioId } from '../../shared/business/profileTypes';
+import { EmptyState } from '../../shared/ui/EmptyState';
+import { StoreSaleScenario } from './StoreSaleScenario';
 import { apiService } from '../../shared/services/apiService';
 import { NoahOrb } from '../../shared/ui/NoahOrb';
 import { Button } from '../../shared/ui/Button';
@@ -21,10 +25,24 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+const SCENARIO_SECTION: Record<VoiceScenarioId, string> = {
+  order: 'tables',
+  booking: 'appointments',
+  expense: 'expenses',
+  store_sale: 'sales',
+};
+
+const SCENARIO_LABELS: Record<VoiceScenarioId, string> = {
+  order: 'Pedido de la mesa',
+  booking: 'Reserva de cita',
+  expense: 'Registro de gasto',
+  store_sale: 'Registro de venta',
+};
+
 export const NoahVoiceScenarios: React.FC = () => {
-  const { showToast, setActiveSection, currentRole } = useApp();
-  const allowedScenarios = getVoiceScenariosForRole(currentRole);
-  const [activeScenario, setActiveScenario] = useState<'A' | 'B' | 'C'>('A');
+  const { showToast, setActiveSection, canAccess, currentBusiness } = useApp();
+  const allowedScenarios = getBusinessProfile(currentBusiness.type).voiceScenarios.filter((id) => canAccess(SCENARIO_SECTION[id]));
+  const [activeId, setActiveScenario] = useState<VoiceScenarioId | undefined>(allowedScenarios[0]);
 
   // Scenario A State (Waiter order Table 4)
   const [scenarioAState, setScenarioAState] = useState<'idle' | 'transcribing' | 'review' | 'confirmed'>('idle');
@@ -152,7 +170,7 @@ export const NoahVoiceScenarios: React.FC = () => {
   const handleRunScenarioC = () => {
     setScenarioCState('transcribing');
     speechService.simulateAudioTranscription(
-      'Noah, pagué 85 dólares de luz en la Empresa Eléctrica por transferencia',
+      'Noah, pagué 85 dólares de luz por transferencia',
       (partial, isFinished) => {
         if (isFinished) {
           setTimeout(() => {
@@ -167,13 +185,13 @@ export const NoahVoiceScenarios: React.FC = () => {
   const handleConfirmScenarioC = async () => {
     await apiService.addExpense({
       date: '2026-11-03',
-      concept: 'Pago de planilla de energía eléctrica EEQ',
+      concept: 'Pago de energía eléctrica',
       category: 'servicios',
-      supplier: 'Empresa Eléctrica Quito',
+      supplier: 'Empresa eléctrica',
       amount: 85.00,
       paymentMethod: 'transfer',
       receiptAttached: true,
-      receiptNumber: 'EEQ-TRANSF-8812',
+      receiptNumber: 'LUZ-8812',
     });
 
     setScenarioCState('confirmed');
@@ -181,64 +199,43 @@ export const NoahVoiceScenarios: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
+      {allowedScenarios.length === 0 && (
+        <EmptyState title="Sin escenarios para tu perfil" description="Pídele al administrador acceso desde Equipo." />
+      )}
       {/* Top Banner Notice (Acceptance Criteria CA-14 & RN-09) */}
       <div className="bg-[#FBF6E6] border border-[#EBD48F] rounded-2xl p-4 flex items-start gap-3">
         <ShieldAlert className="w-5 h-5 text-[#CF6811] shrink-0 mt-0.5" />
         <div className="text-xs text-[#421A05] leading-relaxed">
-          <strong className="font-bold">Demostración destacada de voz · NOAH Escucha:</strong>{' '}
-          En producción se evaluará el reconocimiento con audio real del local mediante Web Speech API o modelos dedicados.
-          Toda acción iniciada por voz siempre se presenta como borrador y requiere confirmación del usuario antes de alterar
-          los datos del negocio.
+          Demostración con audio simulado. Toda acción iniciada por voz queda como borrador y requiere tu confirmación.
         </div>
       </div>
 
-      {/* Scenario Selector Tabs */}
       {allowedScenarios.length > 1 && (
-      <div className="flex flex-wrap items-center gap-2 p-1 bg-[#F5F4F1] rounded-2xl border border-[#E7E5E0]">
-        <button
-          onClick={() => setActiveScenario('A')}
-          className={`flex-1 min-w-[200px] py-2.5 px-4 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-2 ${
-            activeScenario === 'A'
-              ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]'
-              : 'text-[#6B6B6B] hover:text-[#111111]'
-          }`}
-        >
-          <span>Escenario A: Mesero en Mesa 4</span>
-          <Badge variant="olive" size="sm">Restaurante</Badge>
-        </button>
-
-        <button
-          onClick={() => setActiveScenario('B')}
-          className={`flex-1 min-w-[200px] py-2.5 px-4 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-2 ${
-            activeScenario === 'B'
-              ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]'
-              : 'text-[#6B6B6B] hover:text-[#111111]'
-          }`}
-        >
-          <span>Escenario B: Reserva con Choque</span>
-          <Badge variant="banana" size="sm">Barbería</Badge>
-        </button>
-
-        <button
-          onClick={() => setActiveScenario('C')}
-          className={`flex-1 min-w-[200px] py-2.5 px-4 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-2 ${
-            activeScenario === 'C'
-              ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]'
-              : 'text-[#6B6B6B] hover:text-[#111111]'
-          }`}
-        >
-          <span>Escenario C: Registro de Gasto</span>
-          <Badge variant="harvest" size="sm">Finanzas</Badge>
-        </button>
-      </div>
+        <div className="flex flex-wrap items-center gap-2 p-1 bg-[#F5F4F1] rounded-2xl border border-[#E7E5E0]" role="tablist">
+          {allowedScenarios.map((id) => (
+            <button
+              key={id}
+              role="tab"
+              aria-selected={activeId === id}
+              onClick={() => setActiveScenario(id)}
+              className={`flex-1 min-w-[160px] min-h-9 px-3 rounded-xl text-xs font-bold transition-all ${
+                activeId === id ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]' : 'text-[#6B6B6B] hover:text-[#111111]'
+              }`}
+            >
+              {SCENARIO_LABELS[id]}
+            </button>
+          ))}
+        </div>
       )}
 
+      {activeId === 'store_sale' && <StoreSaleScenario />}
+
       {/* ================= ESCENARIO A ================= */}
-      {activeScenario === 'A' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {activeId === 'order' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
           {/* Left Column: Live Audio Transcription */}
-          <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] flex flex-col space-y-4">
+          <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)] flex flex-col space-y-4">
             <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-4">
               <div>
                 <h3 className="text-base font-bold text-[#111111]">
@@ -350,7 +347,7 @@ export const NoahVoiceScenarios: React.FC = () => {
           </div>
 
           {/* Right Column: Detected Order Draft */}
-          <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] flex flex-col space-y-4">
+          <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)] flex flex-col space-y-4">
             <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-3">
               <div>
                 <span className="text-xs font-bold text-[#A43108] uppercase tracking-wider">
@@ -371,7 +368,7 @@ export const NoahVoiceScenarios: React.FC = () => {
                     <div className="text-xs font-bold text-[#111111]">{item.name}</div>
                     <div className="text-[11px] text-[#A43108] italic">{item.notes}</div>
                     <div className="text-xs text-[#6B6B6B] mt-0.5 tabular-nums">
-                      ${item.price.toFixed(2)} c/u
+                      {formatCurrency(item.price)} c/u
                     </div>
                   </div>
 
@@ -438,7 +435,7 @@ export const NoahVoiceScenarios: React.FC = () => {
                     <CheckCircle2 className="w-4 h-4" />
                     <span>¡Comanda recibida en Cocina y Mesa 4 ocupada!</span>
                   </div>
-                  {canAccessSection(currentRole, 'kitchen') && (
+                  {canAccess('kitchen') && (
                     <button
                       onClick={() => setActiveSection('kitchen')}
                       className="text-[11px] text-[#CF6811] underline font-semibold mt-1 inline-block"
@@ -454,8 +451,8 @@ export const NoahVoiceScenarios: React.FC = () => {
       )}
 
       {/* ================= ESCENARIO B ================= */}
-      {activeScenario === 'B' && (
-        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] max-w-3xl mx-auto space-y-6">
+      {activeId === 'booking' && (
+        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)] max-w-3xl mx-auto space-y-3">
           <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-4">
             <div>
               <h3 className="text-base font-bold text-[#111111]">
@@ -573,13 +570,13 @@ export const NoahVoiceScenarios: React.FC = () => {
       )}
 
       {/* ================= ESCENARIO C ================= */}
-      {activeScenario === 'C' && (
-        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] max-w-2xl mx-auto space-y-6">
+      {activeId === 'expense' && (
+        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)] max-w-2xl mx-auto space-y-3">
           <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-4">
             <div>
               <h3 className="text-base font-bold text-[#111111]">Registro asistido de gasto por voz</h3>
               <p className="text-xs text-[#6B6B6B]">
-                "Noah, pagué 85 dólares de luz en la Empresa Eléctrica por transferencia"
+                "Noah, pagué 85 dólares de luz por transferencia"
               </p>
             </div>
             {scenarioCState === 'idle' ? (
@@ -607,7 +604,7 @@ export const NoahVoiceScenarios: React.FC = () => {
             <div className="p-4 bg-[#F5F4F1] rounded-xl flex items-center gap-3">
               <NoahOrb state="listening" size="sm" />
               <div className="text-xs text-[#111111] animate-pulse">
-                Transcribiendo: "Noah, pagué 85 dólares de luz en la Empresa Eléctrica por transferencia"
+                Transcribiendo: "Noah, pagué 85 dólares de luz por transferencia"
               </div>
             </div>
           )}

@@ -5,7 +5,7 @@ import { NotificationAlert } from '../../shared/types';
 import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
 import { Modal } from '../../shared/ui/Modal';
-import { canCreateDraft, getVisibleAlerts } from '../../shared/permissions/rolePermissions';
+import { getVisibleAlerts } from '../../shared/permissions/rolePermissions';
 import {
   BellRing,
   AlertTriangle,
@@ -19,8 +19,8 @@ import {
 import confetti from 'canvas-confetti';
 
 export const AlertsView: React.FC = () => {
-  const { showToast, setActiveSection, setUnreadNotificationsCount, currentRole } = useApp();
-  const canCreatePromo = canCreateDraft(currentRole, 'promo');
+  const { showToast, setActiveSection, setUnreadNotificationsCount, currentRole, accessibleSections, canAccess } = useApp();
+  const canCreatePromo = currentRole === 'owner';
   const [alerts, setAlerts] = useState<NotificationAlert[]>([]);
   const [selectedAlertForPromo, setSelectedAlertForPromo] = useState<NotificationAlert | null>(null);
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
@@ -36,7 +36,7 @@ export const AlertsView: React.FC = () => {
   }, []);
 
   const loadAlerts = async () => {
-    const data = getVisibleAlerts(currentRole, await apiService.getNotifications());
+    const data = getVisibleAlerts(accessibleSections, await apiService.getNotifications());
     setAlerts(data);
     setUnreadNotificationsCount(data.filter((n) => !n.dismissed).length);
   };
@@ -51,14 +51,17 @@ export const AlertsView: React.FC = () => {
     setIsPromoModalOpen(true);
   };
 
-  const handleApplyPromo = (e: React.FormEvent) => {
+  const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault();
+    await apiService.addPromotion({ title: promoTitle, item: promoDish, discount: promoDiscount, duration: promoDuration });
+    if (selectedAlertForPromo) await apiService.dismissNotification(selectedAlertForPromo.id);
+    loadAlerts();
     try {
       confetti({ particleCount: 50, spread: 60 });
     } catch (e) {}
 
     setIsPromoModalOpen(false);
-    showToast('Borrador de promoción guardado para aplicación en caja', 'success');
+    showToast(canAccess('promotions') ? 'Borrador guardado en Promociones. No se aplica sin tu aprobación.' : 'Borrador guardado. No se aplica sin tu aprobación.', 'success');
   };
 
   const handleDismiss = async (id: string) => {
@@ -68,26 +71,16 @@ export const AlertsView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-        <div>
-          <div className="flex items-center gap-2">
-            <BellRing className="w-5 h-5 text-[#CF6811]" />
-            <h2 className="text-lg font-bold text-[#111111]">Centro de Alertas y Recomendaciones</h2>
-          </div>
-          <p className="text-xs text-[#6B6B6B]">
-            Avisos predictivos de merma, desvíos de ventas y sugerencias comerciales de Noah.
-          </p>
-        </div>
-
-        <Badge variant="banana">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+<Badge variant="banana">
           {alerts.filter((a) => !a.dismissed).length} alertas activas
         </Badge>
       </div>
 
       {/* Alerts Feed */}
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
         {alerts.map((alert) => {
           if (alert.dismissed) return null;
 
@@ -115,7 +108,7 @@ export const AlertsView: React.FC = () => {
           return (
             <div
               key={alert.id}
-              className={`rounded-2xl border p-5 shadow-[var(--shadow-soft)] transition-all space-y-3 ${severityStyles.border}`}
+              className={`rounded-2xl border p-4 shadow-[var(--shadow-soft)] transition-all space-y-3 ${severityStyles.border}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
@@ -147,7 +140,11 @@ export const AlertsView: React.FC = () => {
               {/* Action Buttons */}
               <div className="pt-2 border-t border-black/5 flex items-center justify-between">
                 <div>
-                  {alert.suggestedAction && canCreatePromo ? (
+                  {alert.suggestedAction?.type === 'adjust_price' && canAccess('costing') ? (
+                    <Button variant="cinnamon" size="sm" onClick={() => setActiveSection('costing')}>
+                      {alert.suggestedAction.label}
+                    </Button>
+                  ) : alert.suggestedAction?.type === 'create_promo' && canCreatePromo ? (
                     <Button
                       variant={alert.severity === 'critical' ? 'primary' : 'cinnamon'}
                       size="sm"
@@ -156,15 +153,11 @@ export const AlertsView: React.FC = () => {
                     >
                       {alert.suggestedAction.label}
                     </Button>
-                  ) : (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setActiveSection('inventory')}
-                    >
-                      Ver inventario en bodega
+                  ) : alert.topic === 'stock' && canAccess('inventory') ? (
+                    <Button variant="secondary" size="sm" onClick={() => setActiveSection('inventory')}>
+                      Ver inventario
                     </Button>
-                  )}
+                  ) : null}
                 </div>
 
                 <button

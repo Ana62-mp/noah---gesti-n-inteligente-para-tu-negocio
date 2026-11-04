@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../shared/context/AppContext';
 import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
-import { ROLE_LABELS, canAccessSection, getRolesForBusiness } from '../../shared/permissions/rolePermissions';
+import { ModuleCatalog } from '../../shared/ui/ModuleCatalog';
 import {
   Settings,
   Shield,
@@ -18,8 +18,8 @@ import {
 export const SettingsView: React.FC = () => {
   const {
     currentBusiness,
-    currentRole,
-    setCurrentRole,
+    activeModules,
+    toggleModule,
     isGeminiMode,
     isGeminiAvailable,
     setIsGeminiMode,
@@ -29,30 +29,14 @@ export const SettingsView: React.FC = () => {
     setSimulateEmpty,
     resetAllData,
     showToast,
-    setHasCompletedOnboarding,
-    setActiveSection,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'business' | 'permissions' | 'connectors' | 'demo'>('demo');
+  const [activeTab, setActiveTab] = useState<'modules' | 'business' | 'connectors' | 'demo'>('modules');
 
   // Business info form
   const [businessName, setBusinessName] = useState(currentBusiness.name);
   const [ruc, setRuc] = useState(currentBusiness.ruc);
   const [city, setCity] = useState(currentBusiness.city);
-
-  const matrixRoles = getRolesForBusiness('restaurant');
-  const permissionsMatrix = [
-    { module: 'Dashboard, reportes y rentabilidad', section: 'dashboard' },
-    { module: 'Ventas y cierre de caja', section: 'sales' },
-    { module: 'Gastos (dueño) y compras de insumos (inventario)', section: 'expenses' },
-    { module: 'Recetas, costeo y márgenes', section: 'costing' },
-    { module: 'Carta con precios (costos solo para el dueño)', section: 'menu' },
-    { module: 'Mesas y pedidos (cobro: dueño y caja)', section: 'tables' },
-    { module: 'Delivery y para llevar', section: 'delivery' },
-    { module: 'Tablero de cocina', section: 'kitchen' },
-    { module: 'Insumos, bodega y proveedores', section: 'inventory' },
-    { module: 'Configuración y demostración', section: 'settings' },
-  ];
 
   const plannedConnectors = [
     { name: 'Gemini (Google AI)', purpose: 'Motor conversacional de inteligencia artificial', status: 'Opcional: requiere clave' },
@@ -65,20 +49,18 @@ export const SettingsView: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Top Header & Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-        <div>
-          <div className="flex items-center gap-2">
-            <Settings className="w-5 h-5 text-[#CF6811]" />
-            <h2 className="text-lg font-bold text-[#111111]">Configuración y Ajustes</h2>
-          </div>
-          <p className="text-xs text-[#6B6B6B]">
-            Datos del negocio, permisos de roles, conectores previstos y controles del prototipo demo.
-          </p>
-        </div>
-
-        <div className="flex items-center p-1 bg-[#F5F4F1] rounded-xl border border-[#E7E5E0] overflow-x-auto whitespace-nowrap">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+<div className="flex items-center p-1 bg-[#F5F4F1] rounded-xl border border-[#E7E5E0] overflow-x-auto whitespace-nowrap">
+          <button
+            onClick={() => setActiveTab('modules')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+              activeTab === 'modules' ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]' : 'text-[#6B6B6B]'
+            }`}
+          >
+            Módulos
+          </button>
           <button
             onClick={() => setActiveTab('demo')}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
@@ -96,14 +78,6 @@ export const SettingsView: React.FC = () => {
             Datos del negocio
           </button>
           <button
-            onClick={() => setActiveTab('permissions')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'permissions' ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]' : 'text-[#6B6B6B]'
-            }`}
-          >
-            Roles y permisos
-          </button>
-          <button
             onClick={() => setActiveTab('connectors')}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
               activeTab === 'connectors' ? 'bg-white text-[#111111] shadow-[var(--shadow-soft)]' : 'text-[#6B6B6B]'
@@ -114,10 +88,16 @@ export const SettingsView: React.FC = () => {
         </div>
       </div>
 
+      {activeTab === 'modules' && (
+        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)]">
+          <ModuleCatalog type={currentBusiness.type} selected={activeModules} onToggle={toggleModule} />
+        </div>
+      )}
+
       {/* TAB 1: DEMO CONTROLS (CRITICAL FOR ACCEPTANCE CRITERIA) */}
       {activeTab === 'demo' && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-6">
+        <div className="space-y-3">
+          <div className="bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)] space-y-3">
             <div className="border-b border-[#E7E5E0] pb-3">
               <h3 className="text-base font-bold text-[#111111]">
                 Panel de Control de la Presentación (Sandbox)
@@ -214,31 +194,13 @@ export const SettingsView: React.FC = () => {
                 </Button>
               </div>
             </div>
-
-            {/* Re-run Onboarding */}
-            <div className="pt-4 border-t border-[#E7E5E0] flex items-center justify-between text-xs">
-              <div>
-                <span className="font-bold text-[#111111]">¿Deseas repetir el Asistente de Configuración inicial?</span>
-                <p className="text-[#6B6B6B]">Vuelve a ejecutar "Arma tu NOAH" de 4 pasos.</p>
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setHasCompletedOnboarding(false);
-                  setActiveSection('dashboard');
-                }}
-              >
-                Personalizar mi NOAH
-              </Button>
-            </div>
           </div>
         </div>
       )}
 
       {/* TAB 2: BUSINESS INFO */}
       {activeTab === 'business' && (
-        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] max-w-2xl mx-auto space-y-4 text-xs">
+        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)] max-w-2xl mx-auto space-y-4 text-xs">
           <div className="border-b border-[#E7E5E0] pb-3">
             <h3 className="text-base font-bold text-[#111111]">Datos Legales y Comerciales</h3>
             <p className="text-[#6B6B6B]">Configuración territorial y fiscal para Ecuador</p>
@@ -304,62 +266,9 @@ export const SettingsView: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 3: ROLES & PERMISSIONS */}
-      {activeTab === 'permissions' && (
-        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-4">
-          <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-3">
-            <div>
-              <h3 className="text-base font-bold text-[#111111]">
-                Matriz de Control de Accesos por Rol (RBAC)
-              </h3>
-              <p className="text-xs text-[#6B6B6B]">
-                Protege información sensible del negocio según las responsabilidades del puesto.
-              </p>
-            </div>
-            <div className="text-xs">
-              <span className="text-[#6B6B6B]">Tu rol actual: </span>
-              <strong className="text-[#CF6811] font-bold">{ROLE_LABELS[currentRole]}</strong>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-[#F5F4F1] text-[#6B6B6B] uppercase font-semibold">
-                <tr>
-                  <th className="py-2.5 px-3">Módulo del sistema</th>
-                  {matrixRoles.map((role) => (
-                    <th key={role} className="py-2.5 px-3 text-center">{ROLE_LABELS[role]}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E7E5E0]">
-                {permissionsMatrix.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-[#FBF6E6]/30">
-                    <td className="py-2.5 px-3 font-medium text-[#111111]">{row.module}</td>
-                    {matrixRoles.map((role) => (
-                      <td key={role} className="py-2.5 px-3 text-center">
-                        {canAccessSection(role, row.section) ? (
-                          <span className="text-[#5C5011] font-bold" aria-label="Con acceso">✓</span>
-                        ) : (
-                          <span className="text-[#6B6B6B]" aria-label="Sin acceso">—</span>
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-xs text-[#6B6B6B]">
-            Noah está disponible para todos, pero solo responde lo que corresponde a cada perfil.
-            En el prototipo este control ocurre en la pantalla; en producción también debe validarse en el servidor.
-          </p>
-        </div>
-      )}
-
       {/* TAB 4: CONNECTORS */}
       {activeTab === 'connectors' && (
-        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-4">
+        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)] space-y-4">
           <div className="border-b border-[#E7E5E0] pb-3">
             <h3 className="text-base font-bold text-[#111111]">
               Estado de Conectores e Integraciones Previstas

@@ -221,7 +221,7 @@ export const LoginView: React.FC = () => {
                   </div>
 
                   <p className="text-xs text-[#6B6B6B] mb-4 line-clamp-2 leading-relaxed">
-                    Abarrotes, cuadre de caja diario, control de fiados vecinales y registro rápido por voz o lector.
+                    Abarrotes, cuadre de caja diario, control de fiados y registro rápido por voz.
                   </p>
 
                   <div className="bg-[#FBFBF9] rounded-2xl p-3.5 border border-[#E7E5E0] mb-5 space-y-1.5 text-xs">
@@ -251,7 +251,7 @@ export const LoginView: React.FC = () => {
                     <ArrowRight className="w-4 h-4 text-[#5C5011] group-hover/btn:translate-x-1 transition-transform" />
                   </button>
                   <p className="text-[11px] text-[#6B6B6B] italic text-center pt-1">
-                    Interfaz simplificada con botones táctiles grandes y notas de voz.
+                    Pantallas simples con botones grandes y registro por voz.
                   </p>
                 </div>
               </div>
@@ -277,7 +277,7 @@ export const LoginView: React.FC = () => {
                   </div>
 
                   <p className="text-xs text-[#6B6B6B] mb-4 line-clamp-2 leading-relaxed">
-                    Agenda de citas por barbero, cálculo de comisiones automáticas y recordatorios a clientes.
+                    Agenda de citas por barbero, reservas por voz y control de horarios.
                   </p>
 
                   <div className="bg-[#FBFBF9] rounded-2xl p-3.5 border border-[#E7E5E0] mb-5 space-y-1.5 text-xs">
@@ -287,7 +287,7 @@ export const LoginView: React.FC = () => {
                     </div>
                     <div className="flex justify-between text-[#6B6B6B]">
                       <span>Ticket promedio:</span>
-                      <span className="font-bold text-[#111111] tabular-nums">$12,50</span>
+                      <span className="font-bold text-[#111111] tabular-nums">$8,00</span>
                     </div>
                   </div>
                 </div>

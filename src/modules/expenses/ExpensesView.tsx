@@ -1,7 +1,8 @@
 import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
-import { canViewFinancials } from '../../shared/permissions/rolePermissions';
+import { useListParams } from '../../shared/hooks/useListParams';
+import { getBusinessProfile } from '../../shared/business/businessProfiles';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
 import { Expense } from '../../shared/types';
 import { PaginatedTable, Column } from '../../shared/ui/PaginatedTable';
@@ -21,9 +22,11 @@ import {
 } from 'lucide-react';
 
 export const ExpensesView: React.FC = () => {
-  const { showToast, setIsAssistantOpen, currentRole } = useApp();
-  const canSeeAllExpenses = canViewFinancials(currentRole);
-  const [activeTab, setActiveTab] = useState<'expenses' | 'cashflow'>('expenses');
+  const { showToast, setIsAssistantOpen, currentRole, currentBusiness, canAccess, activeSection } = useApp();
+  const canSeeAllExpenses = currentRole === 'owner';
+  const { expenseKpis, cashflow: cashflowDays, vocabulary } = getBusinessProfile(currentBusiness.type);
+  const hasCashflow = canAccess('cashflow');
+  const [activeTab, setActiveTab] = useState<'expenses' | 'cashflow'>(activeSection === 'cashflow' ? 'cashflow' : 'expenses');
 
   const [expensesResult, setExpensesResult] = useState<PaginatedResult<Expense>>({
     items: [],
@@ -33,10 +36,7 @@ export const ExpensesView: React.FC = () => {
     totalPages: 0,
   });
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [filter, setFilter] = useState(canSeeAllExpenses ? 'all' : 'insumos');
-  const [search, setSearch] = useState('');
+  const { page, pageSize, filter, search, setPage, setPageSize, setFilter, setSearch } = useListParams(canSeeAllExpenses ? 'all' : 'insumos');
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,7 +45,7 @@ export const ExpensesView: React.FC = () => {
   const [concept, setConcept] = useState('');
   const [amount, setAmount] = useState<number>(45.00);
   const [category, setCategory] = useState<Expense['category']>('insumos');
-  const [supplier, setSupplier] = useState('Mercado Mayorista Quito');
+  const [supplier, setSupplier] = useState(vocabulary.defaultSupplier);
   const [paymentMethod, setPaymentMethod] = useState<Expense['paymentMethod']>('cash');
   const [hasReceipt, setHasReceipt] = useState(true);
 
@@ -143,33 +143,17 @@ export const ExpensesView: React.FC = () => {
     },
   ];
 
-  // Cashflow simulation data (entradas vs salidas)
-  const cashflowDays = [
-    { day: 'Lun 27', in: 1250, out: 420 },
-    { day: 'Mar 28', in: 980, out: 185 },
-    { day: 'Mié 29', in: 740, out: 820 },
-    { day: 'Jue 30', in: 1100, out: 350 },
-    { day: 'Vie 31', in: 2600, out: 1650 },
-    { day: 'Sáb 01', in: 3400, out: 950 },
-    { day: 'Dom 02', in: 2900, out: 240 },
-    { day: 'Lun 03', in: 1360, out: 145 },
-  ];
+  const cashflowMax = Math.max(...cashflowDays.flatMap((day) => [day.in, day.out]), 1);
+  const cashflowIn = cashflowDays.reduce((sum, day) => sum + day.in, 0);
+  const cashflowOut = cashflowDays.reduce((sum, day) => sum + day.out, 0);
+  const heaviestDay = cashflowDays.reduce((top, day) => (day.out > top.out ? day : top), cashflowDays[0]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-        <div>
-          <h2 className="text-lg font-bold text-[#111111]">{canSeeAllExpenses ? 'Gastos y Compras' : 'Compras de insumos'}</h2>
-          <p className="text-xs text-[#6B6B6B]">
-            {canSeeAllExpenses
-              ? 'Control de egresos, comprobantes, clasificación y flujo de caja neto.'
-              : 'Compras de mercadería con su proveedor y comprobante.'}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {canSeeAllExpenses && (
+      <div className="flex flex-wrap items-center justify-end gap-2">
+<div className="flex items-center gap-3">
+          {canSeeAllExpenses && hasCashflow && (
           <div className="flex items-center p-1 bg-[#F5F4F1] rounded-xl border border-[#E7E5E0]">
             <button
               onClick={() => setActiveTab('expenses')}
@@ -217,41 +201,14 @@ export const ExpensesView: React.FC = () => {
       {activeTab === 'expenses' ? (
         <>
           {canSeeAllExpenses && (
-            <>
-          {/* Category Summary KPIs */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-              <span className="text-[10px] uppercase font-bold text-[#6B6B6B]">Insumos (Mes)</span>
-              <div className="text-lg font-bold font-mono text-[#111111] tabular-nums mt-1">
-                $6.300,00
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {expenseKpis.map(({ label, value }, index) => (
+                <div key={label} className="bg-white p-3 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
+                  <div className={`text-[11px] uppercase font-bold ${index === expenseKpis.length - 1 ? 'text-[#A43108]' : 'text-[#6B6B6B]'}`}>{label}</div>
+                  <div className={`text-lg font-black tabular-nums ${index === expenseKpis.length - 1 ? 'text-[#A43108]' : 'text-[#111111]'}`}>{value}</div>
+                </div>
+              ))}
             </div>
-            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-              <span className="text-[10px] uppercase font-bold text-[#6B6B6B]">Nómina / Sueldos</span>
-              <div className="text-lg font-bold font-mono text-[#111111] tabular-nums mt-1">
-                $2.900,00
-              </div>
-            </div>
-            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-              <span className="text-[10px] uppercase font-bold text-[#6B6B6B]">Arriendo local</span>
-              <div className="text-lg font-bold font-mono text-[#111111] tabular-nums mt-1">
-                $850,00
-              </div>
-            </div>
-            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-              <span className="text-[10px] uppercase font-bold text-[#6B6B6B]">Servicios básicos</span>
-              <div className="text-lg font-bold font-mono text-[#111111] tabular-nums mt-1">
-                $349,60
-              </div>
-            </div>
-            <div className="bg-white p-3.5 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-              <span className="text-[10px] uppercase font-bold text-[#A43108]">Total egresos</span>
-              <div className="text-lg font-bold font-mono text-[#A43108] tabular-nums mt-1">
-                $12.450,00
-              </div>
-            </div>
-          </div>
-            </>
           )}
 
           {/* Filters Bar */}
@@ -263,7 +220,6 @@ export const ExpensesView: React.FC = () => {
                 value={filter}
                 onChange={(e) => {
                   setFilter(e.target.value);
-                  setPage(1);
                 }}
                 className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-2.5 py-1 text-xs text-[#111111] focus:outline-none"
               >
@@ -283,7 +239,6 @@ export const ExpensesView: React.FC = () => {
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
-                setPage(1);
               }}
               className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-3 py-1 text-xs text-[#111111] focus:outline-none focus:ring-1 focus:ring-[#CF6811] w-48"
             />
@@ -300,7 +255,6 @@ export const ExpensesView: React.FC = () => {
             onPageChange={setPage}
             onPageSizeChange={(newSize) => {
               setPageSize(newSize);
-              setPage(1);
             }}
             isLoading={isLoading}
             error={loadError}
@@ -310,13 +264,13 @@ export const ExpensesView: React.FC = () => {
         </>
       ) : (
         /* Cash Flow Chart View */
-        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-6">
+        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)] space-y-3">
           <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-4">
             <div>
               <h3 className="text-base font-bold text-[#111111]">
                 Flujo de Caja: Entradas vs. Salidas Diarias
               </h3>
-              <p className="text-xs text-[#6B6B6B]">Últimos 8 días de operación en Quito</p>
+              <p className="text-xs text-[#6B6B6B]">Últimos 8 días de operación</p>
             </div>
             <div className="flex items-center gap-3 text-xs">
               <span className="flex items-center gap-1.5 font-semibold text-[#5C5011]">
@@ -333,9 +287,8 @@ export const ExpensesView: React.FC = () => {
           {/* Cashflow visual comparison */}
           <div className="grid grid-cols-8 gap-2 sm:gap-4 items-end h-56 border-b border-[#E7E5E0] pb-2">
             {cashflowDays.map((d, i) => {
-              const max = 3600;
-              const inH = (d.in / max) * 100;
-              const outH = (d.out / max) * 100;
+              const inH = (d.in / cashflowMax) * 100;
+              const outH = (d.out / cashflowMax) * 100;
 
               return (
                 <div key={i} className="flex flex-col items-center h-full justify-end gap-1.5 group">
@@ -359,24 +312,18 @@ export const ExpensesView: React.FC = () => {
             })}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-            <div className="p-4 bg-[#FBF6E6] rounded-xl border border-[#EBD48F]">
-              <span className="text-xs text-[#6B6B6B] font-semibold">Saldo neto del período:</span>
-              <div className="text-xl font-bold font-mono text-[#5C5011] tabular-nums mt-1">
-                +$9.675,00 USD
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="p-3 bg-[#FBF6E6] rounded-xl border border-[#EBD48F]">
+              <span className="text-xs text-[#6B6B6B] font-semibold">Saldo neto del período</span>
+              <div className="text-lg font-black tabular-nums text-[#5C5011]">{formatCurrency(cashflowIn - cashflowOut)}</div>
             </div>
-            <div className="p-4 bg-[#FAFAF8] rounded-xl border border-[#E7E5E0]">
-              <span className="text-xs text-[#6B6B6B] font-semibold">Día de mayor egreso:</span>
-              <div className="text-sm font-bold text-[#111111] mt-1">
-                Viernes 31 ($1.650, pago de quincena)
-              </div>
+            <div className="p-3 bg-[#FAFAF8] rounded-xl border border-[#E7E5E0]">
+              <span className="text-xs text-[#6B6B6B] font-semibold">Total de entradas y salidas</span>
+              <div className="text-sm font-bold text-[#111111]">{formatCurrency(cashflowIn)} / {formatCurrency(cashflowOut)}</div>
             </div>
-            <div className="p-4 bg-[#FAFAF8] rounded-xl border border-[#E7E5E0]">
-              <span className="text-xs text-[#6B6B6B] font-semibold">Día de mayor superávit:</span>
-              <div className="text-sm font-bold text-[#5C5011] mt-1">
-                Sábado 01 (+$2.450 netos)
-              </div>
+            <div className="p-3 bg-[#FAFAF8] rounded-xl border border-[#E7E5E0]">
+              <span className="text-xs text-[#6B6B6B] font-semibold">Día de mayor egreso</span>
+              <div className="text-sm font-bold text-[#111111]">{heaviestDay.day}: {formatCurrency(heaviestDay.out)}</div>
             </div>
           </div>
         </div>

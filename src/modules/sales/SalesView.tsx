@@ -1,6 +1,8 @@
 import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { getBusinessProfile } from '../../shared/business/businessProfiles';
+import { useListParams } from '../../shared/hooks/useListParams';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
 import { Sale } from '../../shared/types';
 import { PaginatedTable, Column } from '../../shared/ui/PaginatedTable';
@@ -21,6 +23,8 @@ import {
 
 export const SalesView: React.FC = () => {
   const { currentBusiness, showToast } = useApp();
+  const { salesSummary, closing, vocabulary } = getBusinessProfile(currentBusiness.type);
+  const hasChannelChoice = vocabulary.saleChannels.length > 1;
   const [activeTab, setActiveTab] = useState<'sales' | 'closing'>('sales');
 
   const [salesResult, setSalesResult] = useState<PaginatedResult<Sale>>({
@@ -31,20 +35,17 @@ export const SalesView: React.FC = () => {
     totalPages: 0,
   });
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [filter, setFilter] = useState('all');
-  const [search, setSearch] = useState('');
+  const { page, pageSize, filter, search, setPage, setPageSize, setFilter, setSearch } = useListParams('all');
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // New sale form
-  const [newSaleDish, setNewSaleDish] = useState('Encebollado mixto de albacora');
-  const [newSalePrice, setNewSalePrice] = useState(4.50);
+  const [newSaleDish, setNewSaleDish] = useState(vocabulary.defaultSaleItem.name);
+  const [newSalePrice, setNewSalePrice] = useState(vocabulary.defaultSaleItem.price);
   const [newSaleQty, setNewSaleQty] = useState(1);
   const [newSaleMethod, setNewSaleMethod] = useState<Sale['paymentMethod']>('cash');
-  const [newSaleChannel, setNewSaleChannel] = useState<Sale['channel']>('salon');
+  const [newSaleChannel, setNewSaleChannel] = useState<Sale['channel']>(vocabulary.saleChannels[0].value);
   const [newSaleTable, setNewSaleTable] = useState(1);
 
   useEffect(() => {
@@ -116,13 +117,15 @@ export const SalesView: React.FC = () => {
           salon: { label: s.tableNumber ? `Mesa ${s.tableNumber}` : 'Salón', v: 'olive' },
           takeout: { label: 'Para llevar', v: 'banana' },
           delivery: { label: 'Delivery', v: 'harvest' },
+          counter: { label: 'Mostrador', v: 'olive' },
+          chair: { label: 'En sillón', v: 'olive' },
         };
         const conf = variants[s.channel] || { label: s.channel, v: 'harvest' };
         return <Badge variant={conf.v} size="sm">{conf.label}</Badge>;
       },
     },
     {
-      header: 'Detalle de platos',
+      header: vocabulary.itemsColumn,
       accessor: (s) => (
         <div className="text-xs">
           {s.items.map((it, i) => (
@@ -158,17 +161,10 @@ export const SalesView: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Top Header & Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-        <div>
-          <h2 className="text-lg font-bold text-[#111111]">Ventas y Caja</h2>
-          <p className="text-xs text-[#6B6B6B]">
-            Control de cobros en salón, delivery, métodos de pago y arqueo diario.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+<div className="flex items-center gap-3">
           <div className="flex items-center p-1 bg-[#F5F4F1] rounded-xl border border-[#E7E5E0]">
             <button
               onClick={() => setActiveTab('sales')}
@@ -205,75 +201,41 @@ export const SalesView: React.FC = () => {
 
       {activeTab === 'sales' ? (
         <>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-              <div className="flex items-center justify-between text-xs text-[#6B6B6B] mb-1">
-                <span>Total hoy (86 ventas)</span>
-                <Coins className="w-4 h-4 text-[#CF6811]" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {salesSummary.map(({ label, value }) => (
+              <div key={label} className="bg-white p-3 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
+                <div className="text-xs text-[#6B6B6B]">{label}</div>
+                <div className="text-lg font-black tabular-nums text-[#111111]">{value}</div>
               </div>
-              <div className="text-xl font-bold font-mono text-[#111111] tabular-nums">
-                $780,50
-              </div>
-            </div>
-
-            <div className="bg-white p-4 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-              <div className="flex items-center justify-between text-xs text-[#6B6B6B] mb-1">
-                <span>Efectivo caja</span>
-                <Coins className="w-4 h-4 text-[#5C5011]" />
-              </div>
-              <div className="text-xl font-bold font-mono text-[#5C5011] tabular-nums">
-                $395,00
-              </div>
-            </div>
-
-            <div className="bg-white p-4 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-              <div className="flex items-center justify-between text-xs text-[#6B6B6B] mb-1">
-                <span>Tarjetas Datafast</span>
-                <CreditCard className="w-4 h-4 text-[#CF6811]" />
-              </div>
-              <div className="text-xl font-bold font-mono text-[#111111] tabular-nums">
-                $225,50
-              </div>
-            </div>
-
-            <div className="bg-white p-4 rounded-xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-              <div className="flex items-center justify-between text-xs text-[#6B6B6B] mb-1">
-                <span>Transferencias / DeUna</span>
-                <Building className="w-4 h-4 text-[#8A7424]" />
-              </div>
-              <div className="text-xl font-bold font-mono text-[#111111] tabular-nums">
-                $160,00
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* Filter Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[#E7E5E0]">
+            {hasChannelChoice ? (
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-[#6B6B6B]">Canal:</span>
               <select
                 value={filter}
                 onChange={(e) => {
                   setFilter(e.target.value);
-                  setPage(1);
                 }}
                 className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-2.5 py-1 text-xs text-[#111111] focus:outline-none"
               >
                 <option value="all">Todos los canales</option>
-                <option value="salon">Salón</option>
-                <option value="takeout">Para llevar</option>
-                <option value="delivery">Delivery</option>
+                {vocabulary.saleChannels.map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
               </select>
             </div>
+            ) : <span />}
 
             <input
               type="text"
-              placeholder="Buscar por plato o código…"
+              placeholder={`Buscar ${vocabulary.itemNoun}…`}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
-                setPage(1);
               }}
               className="bg-[#F5F4F1] border border-[#E7E5E0] rounded-lg px-3 py-1 text-xs text-[#111111] focus:outline-none focus:ring-1 focus:ring-[#CF6811] w-48"
             />
@@ -290,7 +252,6 @@ export const SalesView: React.FC = () => {
             onPageChange={setPage}
             onPageSizeChange={(newSize) => {
               setPageSize(newSize);
-              setPage(1);
             }}
             isLoading={isLoading}
             error={loadError}
@@ -300,39 +261,25 @@ export const SalesView: React.FC = () => {
         </>
       ) : (
         /* Cierre de caja Tab */
-        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] max-w-2xl mx-auto space-y-6">
+        <div className="bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)] max-w-3xl mx-auto space-y-3">
           <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-4">
             <div>
               <h3 className="text-base font-bold text-[#111111]">Arqueo y Cierre del Día</h3>
-              <p className="text-xs text-[#6B6B6B]">Turno 03 de noviembre de 2026 · Quito</p>
+              <p className="text-xs text-[#6B6B6B]">{closing.turn}</p>
             </div>
             <Badge variant="olive">Caja Abierta</Badge>
           </div>
 
-          <div className="space-y-3 divide-y divide-[#E7E5E0] text-sm">
-            <div className="flex justify-between items-center py-2">
-              <span className="text-[#6B6B6B]">Fondo inicial de apertura:</span>
-              <span className="font-mono font-bold text-[#111111]">$50,00</span>
-            </div>
-            <div className="flex justify-between items-center py-2">
-              <span className="text-[#6B6B6B]">Ventas en efectivo hoy:</span>
-              <span className="font-mono font-bold text-[#5C5011]">+$395,00</span>
-            </div>
-            <div className="flex justify-between items-center py-2">
-              <span className="text-[#6B6B6B]">Ventas con tarjeta (Datafast):</span>
-              <span className="font-mono font-bold text-[#111111]">+$225,50</span>
-            </div>
-            <div className="flex justify-between items-center py-2">
-              <span className="text-[#6B6B6B]">Transferencias / DeUna:</span>
-              <span className="font-mono font-bold text-[#111111]">+$160,00</span>
-            </div>
-            <div className="flex justify-between items-center py-2 text-[#A43108]">
-              <span>Salidas de caja chica (Gastos del día):</span>
-              <span className="font-mono font-bold">-$45,00</span>
-            </div>
-            <div className="flex justify-between items-center py-3 bg-[#FAFAF8] px-3 rounded-xl border border-[#E7E5E0] text-base font-bold">
-              <span>Efectivo físico a entregar en caja:</span>
-              <span className="font-mono text-[#5C5011] text-xl">$400,00</span>
+          <div className="divide-y divide-[#E7E5E0] text-sm">
+            {closing.rows.map(({ label, value, isExpense }) => (
+              <div key={label} className={`flex justify-between items-center py-2 ${isExpense ? 'text-[#A43108]' : ''}`}>
+                <span className={isExpense ? '' : 'text-[#6B6B6B]'}>{label}</span>
+                <span className="font-bold tabular-nums">{value}</span>
+              </div>
+            ))}
+            <div className="flex justify-between items-center py-2.5 mt-1 bg-[#FAFAF8] px-3 rounded-xl border border-[#E7E5E0] font-bold">
+              <span>Efectivo a entregar</span>
+              <span className="text-[#5C5011] text-lg tabular-nums">{closing.total}</span>
             </div>
           </div>
 
@@ -357,11 +304,11 @@ export const SalesView: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Registrar Venta"
-        subtitle="Agrega un cobro manual en salón o delivery"
+        subtitle="Agrega un cobro manual"
       >
         <form onSubmit={handleRegisterSale} className="space-y-4 text-xs">
           <div>
-            <label className="font-semibold text-[#111111] block mb-1">Plato o Producto:</label>
+            <label className="font-semibold text-[#111111] block mb-1">{vocabulary.itemNoun[0].toUpperCase() + vocabulary.itemNoun.slice(1)}:</label>
             <input
               type="text"
               value={newSaleDish}
@@ -397,6 +344,7 @@ export const SalesView: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
+            {hasChannelChoice && (
             <div>
               <label className="font-semibold text-[#111111] block mb-1">Canal:</label>
               <select
@@ -404,11 +352,12 @@ export const SalesView: React.FC = () => {
                 onChange={(e) => setNewSaleChannel(e.target.value as Sale['channel'])}
                 className="w-full border border-[#E7E5E0] rounded-xl p-2.5 text-xs text-[#111111] bg-[#F5F4F1]"
               >
-                <option value="salon">Salón</option>
-                <option value="takeout">Para llevar</option>
-                <option value="delivery">Delivery</option>
+                {vocabulary.saleChannels.map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
               </select>
             </div>
+            )}
             <div>
               <label className="font-semibold text-[#111111] block mb-1">Método de pago:</label>
               <select
