@@ -20,6 +20,7 @@ export const SettingsView: React.FC = () => {
     currentRole,
     setCurrentRole,
     isGeminiMode,
+    isGeminiAvailable,
     setIsGeminiMode,
     simulateError,
     setSimulateError,
@@ -128,16 +129,17 @@ export const SettingsView: React.FC = () => {
                 <div>
                   <div className="text-xs font-bold text-[#421A05] flex items-center gap-1.5">
                     <Sparkles className="w-4 h-4 text-[#CF6811]" />
-                    <span>Modo IA real (Gemini 3.8 Flash)</span>
+                    <span>Modo IA real (Gemini)</span>
                   </div>
                   <p className="text-[11px] text-[#6B6B6B] mt-0.5 max-w-xs">
-                    Envía el resumen JSON del negocio a la API de Gemini vía backend. Si no hay clave, regresa al modo demo.
+                    {isGeminiAvailable ? 'Envía un resumen de los datos de ejemplo a Gemini desde el servidor. Si falla, vuelve al modo demo.' : 'Desactivado: falta GEMINI_API_KEY en el servidor. Las respuestas son simuladas.'}
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
                     checked={isGeminiMode}
+                    disabled={!isGeminiAvailable}
                     onChange={(e) => setIsGeminiMode(e.target.checked)}
                     className="sr-only peer"
                   />

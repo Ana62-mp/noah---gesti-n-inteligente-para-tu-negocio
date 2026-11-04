@@ -30,6 +30,7 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
     currentBusiness,
     currentRole,
     isGeminiMode,
+    isGeminiAvailable,
     setIsGeminiMode,
     showToast,
     setActiveSection,
@@ -122,7 +123,7 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
     setOrbState('thinking');
 
     try {
-      const response = await aiService.askNoah(textToSend, currentBusiness, currentRole);
+      const response = await aiService.askNoah(textToSend, currentBusiness, currentRole, messages);
       setIsTyping(false);
       setOrbState('idle');
       setMessages((prev) => [...prev, response.message]);
@@ -304,8 +305,10 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
             <input
               type="checkbox"
               checked={isGeminiMode}
+              disabled={!isGeminiAvailable}
               onChange={(e) => setIsGeminiMode(e.target.checked)}
-              className="accent-[#CF6811] rounded cursor-pointer"
+              title={isGeminiAvailable ? undefined : 'Configura GEMINI_API_KEY en el servidor para activar la IA real'}
+              className="accent-[#CF6811] rounded cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             />
             <Sparkles className="w-3.5 h-3.5 text-[#CF6811]" />
             <span className="hidden sm:inline">Modo IA real (Gemini)</span>
@@ -473,6 +476,11 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
                   {/* Message Footer: Provenance & Audio speaker */}
                   <div className="flex items-center gap-2 px-1 text-[11px] text-[#6B6B6B]">
                     <span>{msg.timestamp}</span>
+                    {!isUser && msg.source && (
+                      <span className="px-1.5 py-0.5 rounded bg-[#F5F4F1] border border-[#E7E5E0] font-semibold">
+                        {msg.source === 'live' ? 'IA en vivo' : 'Respuesta simulada'}
+                      </span>
+                    )}
 
                     {!isUser && (
                       <>

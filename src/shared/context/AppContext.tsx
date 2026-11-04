@@ -3,6 +3,7 @@ import { BusinessConfig, UserRole, ModuleId } from '../types';
 import { BUSINESS_OPTIONS, INITIAL_MODULES } from '../services/mockData';
 import { apiService } from '../services/apiService';
 import { aiService } from '../services/aiService';
+import { fetchGeminiHealth } from '../services/geminiClient';
 
 export interface ToastItem {
   id: string;
@@ -49,6 +50,7 @@ interface AppContextType {
   prevTourStep: () => void;
   closeTour: () => void;
   isGeminiMode: boolean;
+  isGeminiAvailable: boolean;
   setIsGeminiMode: (enabled: boolean) => void;
   simulateError: boolean;
   setSimulateError: (err: boolean) => void;
@@ -119,6 +121,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [guidedTourStep, setGuidedTourStep] = useState<number | null>(null);
   const [isGeminiMode, setIsGeminiModeState] = useState(false);
+  const [isGeminiAvailable, setIsGeminiAvailable] = useState(false);
+
+  useEffect(() => {
+    fetchGeminiHealth().then(setIsGeminiAvailable);
+  }, []);
   const [simulateError, setSimulateErrorState] = useState(false);
   const [simulateEmpty, setSimulateEmptyState] = useState(false);
 
@@ -334,11 +341,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const setIsGeminiMode = (enabled: boolean) => {
+    if (enabled && !isGeminiAvailable) {
+      showToast('El servidor no tiene GEMINI_API_KEY configurada. Se mantiene el modo demo.', 'warning');
+      return;
+    }
     setIsGeminiModeState(enabled);
     aiService.setGeminiMode(enabled);
     showToast(
       enabled
-        ? 'Modo IA real activado (Gemini 3.8 Flash)'
+        ? 'Modo IA real activado: las respuestas se generan en vivo con datos de ejemplo'
         : 'Modo Demo activado (Respuestas guionizadas inmediatas)',
       'info'
     );
@@ -468,6 +479,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         prevTourStep,
         closeTour,
         isGeminiMode,
+        isGeminiAvailable,
         setIsGeminiMode,
         simulateError,
         setSimulateError,

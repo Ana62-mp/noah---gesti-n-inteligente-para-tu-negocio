@@ -248,6 +248,7 @@ export interface ChatMessage {
   timestamp: string;
   audioDuration?: number;
   isLiveTranscript?: boolean;
+  source?: 'demo' | 'live';
   cards?: {
     type: 'kpi' | 'chart' | 'dish_cost' | 'draft_order' | 'draft_expense' | 'draft_promo' | 'appointment' | 'advice';
     title: string;

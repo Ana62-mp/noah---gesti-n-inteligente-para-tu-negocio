@@ -1,4 +1,5 @@
 import { ChatMessage, BusinessConfig, UserRole } from '../types';
+import { askGemini } from './geminiClient';
 
 export interface AIResponse {
   message: ChatMessage;
@@ -22,7 +23,8 @@ export class AIService {
   public async askNoah(
     userQuery: string,
     business: BusinessConfig,
-    role: UserRole
+    role: UserRole,
+    history: ChatMessage[] = []
   ): Promise<AIResponse> {
     // Role check: If waiter asks for owner financial secrets
     const lower = userQuery.toLowerCase().trim();
@@ -45,55 +47,16 @@ export class AIService {
 
     if (this.isGeminiMode) {
       try {
-        const res = await fetch('/api/gemini/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: userQuery,
-            businessContext: {
-              name: business.name,
-              type: business.type,
-              city: business.city,
-              currency: business.currency,
-              role,
-            },
-          }),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          return {
-            message: {
-              id: `msg-noah-${Date.now()}`,
-              sender: 'noah',
-              text: data.texto || 'Aquí tienes la información consultada.',
-              timestamp: new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
-              provenance: {
-                period: data.periodo || 'Período actual',
-                modules: data.datosUsados || ['Base de datos del negocio'],
-                updatedAt: 'En vivo vía Gemini',
-                certainty: data.certeza || 'Alta: procesado por Gemini 3.8 Flash',
-              },
-              cards: data.accion?.tipo && data.accion.tipo !== 'NINGUNA' ? [
-                {
-                  type: 'advice',
-                  title: data.accion.titulo || 'Acción sugerida',
-                  data: data.accion.payload,
-                }
-              ] : undefined,
-            },
-          };
-        } else {
-          // If Gemini fails, gracefully drop to demo response
-          console.warn('Gemini endpoint unreachable or missing key. Falling back to scripted demo.');
-        }
+        const live = await askGemini(userQuery, business, role, history);
+        if (live) return { message: live };
       } catch (err) {
-        console.warn('Network error reaching Gemini endpoint. Using demo engine.', err);
+        console.warn('Gemini unavailable, using demo engine.', err);
       }
     }
 
     // Demo Mode: Scripted intelligent intent matching
-    return this.matchDemoIntent(lower, business, role);
+    const demo = this.matchDemoIntent(lower, business, role);
+    return { ...demo, message: { ...demo.message, source: 'demo' } };
   }
 
   private matchDemoIntent(query: string, business: BusinessConfig, role: UserRole): AIResponse {
