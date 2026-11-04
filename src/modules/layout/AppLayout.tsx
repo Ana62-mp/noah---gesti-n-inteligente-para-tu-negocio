@@ -55,6 +55,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     showToast,
     currentUser,
     logout,
+    isGeminiMode,
   } = useApp();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -154,6 +155,9 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           <ShieldCheck className="w-3.5 h-3.5 text-[#CF6811]" />
           <span>PROTOTIPO COMERCIAL · DATOS DE EJEMPLO ECUADOR (USD $)</span>
           <span className="hidden md:inline text-white/50">· Validado para presentación previa a desarrollo productivo</span>
+          <span className="px-2 py-0.5 rounded-full bg-white/10 text-[10px] font-bold text-[#EBD48F]">
+            {isGeminiMode ? 'IA en vivo' : 'IA: modo demo simulado'}
+          </span>
         </div>
 
         <button
