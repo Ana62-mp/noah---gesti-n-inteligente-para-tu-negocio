@@ -1,12 +1,17 @@
 import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { RowActions } from '../../shared/ui/RowActions';
+import { StatStrip } from '../../shared/ui/StatStrip';
+import { useEntityCrud } from '../../shared/hooks/useEntityCrud';
+import { Plus } from 'lucide-react';
+import { SUPPLIER_DEFAULTS, SUPPLIER_FIELDS, emptySupplier, supplierFromValues, supplierToValues } from '../../shared/forms/catalogForms';
+import { Button } from '../../shared/ui/Button';
 import { FilterBar } from '../../shared/ui/FilterBar';
 import { useListParams } from '../../shared/hooks/useListParams';
 import { apiService, PaginatedResult } from '../../shared/services/apiService';
 import { Supplier } from '../../shared/types';
 import { PaginatedTable, Column } from '../../shared/ui/PaginatedTable';
-import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
 import { SidePanel } from '../../shared/ui/SidePanel';
 import { formatDate, formatCurrency } from '../../shared/utils/formatters';
@@ -37,6 +42,12 @@ export const SuppliersView: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const { currentBusiness } = useApp();
+  const crud = useEntityCrud<Supplier>({
+    collection: 'suppliers', noun: 'proveedor', fields: SUPPLIER_FIELDS, emptyValues: () => emptySupplier(currentBusiness.city.split(' ')[0]), toValues: supplierToValues,
+    fromValues: supplierFromValues, newDefaults: SUPPLIER_DEFAULTS, nameOf: (item) => item.name ?? 'El proveedor', onChanged: () => loadSuppliers(),
+  });
+  const all = apiService.getCollection('suppliers') as Supplier[];
 
   useEffect(() => {
     loadSuppliers();
@@ -125,10 +136,21 @@ export const SuppliersView: React.FC = () => {
         </span>
       ),
     },
+    { header: '', align: 'right', accessor: (item) => <RowActions name={item.name} onEdit={() => crud.openEdit(item)} onDelete={() => crud.askDelete(item)} /> },
   ];
 
   return (
     <div className="space-y-3">
+      <StatStrip stats={[
+        { label: 'Proveedores', value: String(all.length), hint: `${new Set(all.map((s) => s.city)).size} ciudades`, tone: 'cinnamon' },
+        { label: 'Compras del año', value: formatCurrency(all.reduce((sum, s) => sum + s.totalPurchasedThisYear, 0)), hint: 'Acumulado 2026', tone: 'olive' },
+        { label: 'Precios en alza', value: String(all.filter((s) => s.priceTrend === 'increased').length), hint: 'Revisa antes de comprar', tone: 'terracotta' },
+        { label: 'Precios a la baja', value: String(all.filter((s) => s.priceTrend === 'decreased').length), hint: 'Buen momento para comprar', tone: 'banana' },
+      ]} />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-[#6B6B6B]">Directorio de quién te vende, cuánto le compras y cómo cambian sus precios.</p>
+        <Button variant="primary" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={crud.openNew}>Nuevo proveedor</Button>
+      </div>
       <FilterBar
         search={{ value: list.search, onChange: list.setSearch, placeholder: 'Buscar proveedor o producto…' }}
         fields={[
@@ -247,6 +269,8 @@ export const SuppliersView: React.FC = () => {
           </div>
         </SidePanel>
       )}
+
+      {crud.modals}
     </div>
   );
 };

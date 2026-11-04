@@ -6,10 +6,12 @@ import { UserRole } from '../../shared/types';
 import { Badge } from '../../shared/ui/Badge';
 import { Button } from '../../shared/ui/Button';
 import { Modal } from '../../shared/ui/Modal';
+import { FormModal } from '../../shared/ui/FormModal';
 import { buildNavSections } from '../layout/sidebar/navigation.config';
 
 export const TeamView: React.FC = () => {
-  const { team, currentBusiness, activeModules, setMemberAccess, addMember, removeMember, viewAsMember, showToast } = useApp();
+  const { team, currentBusiness, activeModules, setMemberAccess, addMember, removeMember, viewAsMember, showToast, updateMember } = useApp();
+  const [isEditing, setIsEditing] = useState(false);
   const [selectedId, setSelectedId] = useState((team.find(({ role }) => role !== 'owner') ?? team[0]).id);
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -85,6 +87,7 @@ export const TeamView: React.FC = () => {
           {!isAdmin && (
             <div className="flex flex-wrap items-center gap-1.5">
               <Button variant="secondary" size="sm" leftIcon={<Eye className="w-3.5 h-3.5" />} onClick={() => viewAsMember(selected.id)}>Probar su vista</Button>
+              <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>Editar</Button>
               <Button variant="ghost" size="sm" leftIcon={<RotateCcw className="w-3.5 h-3.5" />} onClick={resetToRole}>Restablecer</Button>
               <Button variant="danger" size="sm" leftIcon={<Trash2 className="w-3.5 h-3.5" />} onClick={() => setIsConfirmingRemoval(true)}>Quitar</Button>
             </div>
@@ -147,6 +150,23 @@ export const TeamView: React.FC = () => {
           <Button variant="primary" onClick={confirmRemoval}>Quitar del equipo</Button>
         </div>
       </Modal>
+
+      <FormModal
+        isOpen={isEditing}
+        title="Editar persona"
+        fields={[
+          { key: 'name', label: 'Nombre', type: 'text', required: true },
+          { key: 'role', label: 'Rol', type: 'select', required: true, options: staffRoles.map((role) => ({ value: role, label: ROLE_LABELS[role] })) },
+        ]}
+        initialValues={{ name: selected.name, role: selected.role }}
+        submitLabel="Guardar cambios"
+        onClose={() => setIsEditing(false)}
+        onSubmit={(values) => {
+          updateMember(selected.id, { name: String(values.name).trim(), role: String(values.role) as UserRole });
+          showToast(`${String(values.name).trim()} se actualizó`, 'success');
+          setIsEditing(false);
+        }}
+      />
     </div>
   );
 };

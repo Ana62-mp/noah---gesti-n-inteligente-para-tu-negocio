@@ -1,6 +1,8 @@
 import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { RowActions } from '../../shared/ui/RowActions';
+import { useEntityCrud } from '../../shared/hooks/useEntityCrud';
 import { FilterBar, FilterField } from '../../shared/ui/FilterBar';
 import { getBusinessProfile } from '../../shared/business/businessProfiles';
 import { useListParams } from '../../shared/hooks/useListParams';
@@ -26,6 +28,17 @@ export const SalesView: React.FC = () => {
   const { currentBusiness, showToast } = useApp();
   const { salesSummary, closing, vocabulary } = getBusinessProfile(currentBusiness.type);
   const hasChannelChoice = vocabulary.saleChannels.length > 1;
+  const crud = useEntityCrud<Sale>({
+    collection: 'sales', noun: 'venta', nameOf: () => 'La venta', onChanged: () => loadSales(),
+    deleteWarning: 'se anulará y dejará de sumar en caja y reportes.',
+    fields: [
+      { key: 'paymentMethod', label: 'Método de pago', type: 'select', required: true, options: [{ value: 'cash', label: 'Efectivo' }, { value: 'card', label: 'Tarjeta' }, { value: 'transfer', label: 'Transferencia' }, { value: 'deuna', label: 'DeUna' }] },
+      { key: 'channel', label: 'Canal', type: 'select', required: true, options: vocabulary.saleChannels.map(({ value, label }) => ({ value, label })) },
+    ],
+    emptyValues: () => ({ paymentMethod: 'cash', channel: vocabulary.saleChannels[0].value }),
+    toValues: (sale) => ({ paymentMethod: sale.paymentMethod, channel: sale.channel }),
+    fromValues: (values) => ({ paymentMethod: String(values.paymentMethod) as Sale['paymentMethod'], channel: String(values.channel) as Sale['channel'] }),
+  });
   const [activeTab, setActiveTab] = useState<'sales' | 'closing'>('sales');
 
   const [salesResult, setSalesResult] = useState<PaginatedResult<Sale>>({
@@ -160,6 +173,7 @@ export const SalesView: React.FC = () => {
         </span>
       ),
     },
+    { header: '', align: 'right', accessor: (item) => <RowActions name={item.id} onEdit={() => crud.openEdit(item)} onDelete={() => crud.askDelete(item)} /> },
   ];
 
   return (
@@ -375,6 +389,8 @@ export const SalesView: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {crud.modals}
     </div>
   );
 };

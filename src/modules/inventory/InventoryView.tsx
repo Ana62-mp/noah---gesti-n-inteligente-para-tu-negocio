@@ -1,6 +1,12 @@
 import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { formatCurrency } from '../../shared/utils/formatters';
+import { RowActions } from '../../shared/ui/RowActions';
+import { StatStrip } from '../../shared/ui/StatStrip';
+import { useEntityCrud } from '../../shared/hooks/useEntityCrud';
+
+import { INGREDIENT_DEFAULTS, INGREDIENT_FIELDS, emptyIngredient, ingredientFromValues, ingredientToValues } from '../../shared/forms/operationForms';
 import { FilterBar } from '../../shared/ui/FilterBar';
 import { useListParams } from '../../shared/hooks/useListParams';
 import { getBusinessProfile } from '../../shared/business/businessProfiles';
@@ -40,6 +46,11 @@ export const InventoryView: React.FC = () => {
   const list = useListParams('all');
   const { page, pageSize, filter, search, setPage, setPageSize, setFilter } = list;
   const facets = apiService.getFacets();
+  const crud = useEntityCrud<Ingredient>({
+    collection: 'ingredients', noun: 'ítem', fields: INGREDIENT_FIELDS, emptyValues: emptyIngredient, toValues: ingredientToValues, fromValues: ingredientFromValues,
+    newDefaults: INGREDIENT_DEFAULTS, nameOf: (item) => item.name ?? 'El ítem', onChanged: () => loadIngredients(),
+  });
+  const all = apiService.getCollection('ingredients') as Ingredient[];
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -152,6 +163,7 @@ export const InventoryView: React.FC = () => {
         return <Badge variant={st.v} size="sm">{st.label}</Badge>;
       },
     },
+    { header: '', align: 'right', accessor: (item) => <RowActions name={item.name} onEdit={() => crud.openEdit(item)} onDelete={() => crud.askDelete(item)} /> },
   ];
 
   return (
@@ -198,6 +210,9 @@ export const InventoryView: React.FC = () => {
           >
             Registrar movimiento
           </Button>
+          <Button variant="secondary" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={crud.openNew}>
+            Nuevo ítem
+          </Button>
         </div>
       </div>
 
@@ -220,6 +235,12 @@ export const InventoryView: React.FC = () => {
         </Button>
       </div>
 
+      <StatStrip stats={[
+        { label: 'Ítems', value: String(all.length), hint: `${new Set(all.map((i) => i.category)).size} categorías`, tone: 'cinnamon' },
+        { label: 'Stock bajo', value: String(all.filter((i) => i.status === 'low').length), hint: 'Debajo del mínimo', tone: 'banana' },
+        { label: 'Por vencer', value: String(all.filter((i) => i.status === 'expiring').length), hint: 'En 2 días o menos', tone: 'terracotta' },
+        { label: 'Valor en bodega', value: formatCurrency(all.reduce((sum, i) => sum + i.unitCost * i.currentStock, 0)), hint: 'Al costo', tone: 'olive' },
+      ]} />
       <FilterBar
         search={{ value: list.search, onChange: list.setSearch, placeholder: 'Buscar por nombre, categoría o proveedor…' }}
         fields={[
@@ -325,6 +346,8 @@ export const InventoryView: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {crud.modals}
     </div>
   );
 };

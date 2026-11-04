@@ -1,6 +1,9 @@
 import { getErrorMessage } from '../../shared/utils/errors';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { RowActions } from '../../shared/ui/RowActions';
+import { useEntityCrud } from '../../shared/hooks/useEntityCrud';
+import { EXPENSE_FIELDS, emptyExpense, expenseFromValues, expenseToValues } from '../../shared/forms/operationForms';
 import { FilterBar } from '../../shared/ui/FilterBar';
 import { DonutChart } from '../../shared/ui/Charts';
 import { useListParams } from '../../shared/hooks/useListParams';
@@ -28,6 +31,10 @@ export const ExpensesView: React.FC = () => {
   const canSeeAllExpenses = currentRole === 'owner';
   const { expenseKpis, cashflow: cashflowDays, vocabulary } = getBusinessProfile(currentBusiness.type);
   const hasCashflow = canAccess('cashflow');
+  const crud = useEntityCrud<Expense>({
+    collection: 'expenses', noun: 'gasto', fields: EXPENSE_FIELDS, emptyValues: () => emptyExpense(vocabulary.defaultSupplier), toValues: expenseToValues,
+    fromValues: expenseFromValues, nameOf: (item) => item.concept ?? 'El gasto', onChanged: () => loadExpenses(),
+  });
   const [activeTab, setActiveTab] = useState<'expenses' | 'cashflow'>(activeSection === 'cashflow' ? 'cashflow' : 'expenses');
 
   const [expensesResult, setExpensesResult] = useState<PaginatedResult<Expense>>({
@@ -42,15 +49,7 @@ export const ExpensesView: React.FC = () => {
   const { page, pageSize, filter, search, setPage, setPageSize } = list;
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // New expense form
-  const [concept, setConcept] = useState('');
-  const [amount, setAmount] = useState<number>(45.00);
-  const [category, setCategory] = useState<Expense['category']>('insumos');
-  const [supplier, setSupplier] = useState(vocabulary.defaultSupplier);
-  const [paymentMethod, setPaymentMethod] = useState<Expense['paymentMethod']>('cash');
-  const [hasReceipt, setHasReceipt] = useState(true);
 
   useEffect(() => {
     loadExpenses();
@@ -67,27 +66,6 @@ export const ExpensesView: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleRegisterExpense = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!concept.trim()) return;
-
-    await apiService.addExpense({
-      date: new Date().toISOString().split('T')[0],
-      concept,
-      category,
-      supplier,
-      amount,
-      paymentMethod,
-      receiptAttached: hasReceipt,
-      receiptNumber: hasReceipt ? `FAC-00${Math.floor(Math.random() * 9000 + 1000)}` : undefined,
-    });
-
-    setIsModalOpen(false);
-    setConcept('');
-    showToast(`Gasto por ${formatCurrency(amount)} guardado con éxito`, 'success');
-    loadExpenses();
   };
 
   const columns: Column<Expense>[] = [
@@ -144,6 +122,7 @@ export const ExpensesView: React.FC = () => {
         </span>
       ),
     },
+    { header: '', align: 'right', accessor: (item) => <RowActions name={item.concept} onEdit={() => crud.openEdit(item)} onDelete={() => crud.askDelete(item)} /> },
   ];
 
   const cashflowIn = cashflowDays.reduce((sum, day) => sum + day.in, 0);
@@ -193,7 +172,7 @@ export const ExpensesView: React.FC = () => {
             variant="primary"
             size="sm"
             leftIcon={<Plus className="w-4 h-4" />}
-            onClick={() => setIsModalOpen(true)}
+            onClick={crud.openNew}
           >
             {canSeeAllExpenses ? 'Nuevo gasto' : 'Nueva compra'}
           </Button>
@@ -304,110 +283,7 @@ export const ExpensesView: React.FC = () => {
         </div>
       )}
 
-      {/* Register Expense Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Registrar Gasto o Compra"
-        subtitle="Registra el importe de facturas, notas de venta o egresos operativos"
-      >
-        <form onSubmit={handleRegisterExpense} className="space-y-4 text-xs">
-          <div>
-            <label className="font-semibold text-[#111111] block mb-1">Concepto del gasto:</label>
-            <input
-              type="text"
-              value={concept}
-              onChange={(e) => setConcept(e.target.value)}
-              placeholder="Ej. Compra de 5 kg de limón y cebolla"
-              className="w-full border border-[#E7E5E0] rounded-xl p-2.5 text-xs text-[#111111] bg-[#F5F4F1] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#CF6811]"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="font-semibold text-[#111111] block mb-1">Importe ($ USD):</label>
-              <input
-                type="number"
-                step="0.5"
-                value={amount}
-                onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-                className="w-full border border-[#E7E5E0] rounded-xl p-2.5 text-xs text-[#111111] bg-[#F5F4F1] focus:bg-white font-mono"
-                required
-              />
-            </div>
-            {canSeeAllExpenses && (
-            <div>
-              <label className="font-semibold text-[#111111] block mb-1">Categoría:</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as Expense['category'])}
-                className="w-full border border-[#E7E5E0] rounded-xl p-2.5 text-xs text-[#111111] bg-[#F5F4F1]"
-              >
-                <option value="insumos">Insumos y alimentos</option>
-                <option value="servicios">Servicios básicos (luz/agua/gas)</option>
-                <option value="sueldos">Nómina / Sueldos</option>
-                <option value="arriendo">Arriendo de local</option>
-                <option value="otros">Otros gastos operativos</option>
-              </select>
-            </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="font-semibold text-[#111111] block mb-1">Proveedor / Entidad:</label>
-              <input
-                type="text"
-                value={supplier}
-                onChange={(e) => setSupplier(e.target.value)}
-                className="w-full border border-[#E7E5E0] rounded-xl p-2.5 text-xs text-[#111111] bg-[#F5F4F1]"
-              />
-            </div>
-            <div>
-              <label className="font-semibold text-[#111111] block mb-1">Método de pago:</label>
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as Expense['paymentMethod'])}
-                className="w-full border border-[#E7E5E0] rounded-xl p-2.5 text-xs text-[#111111] bg-[#F5F4F1]"
-              >
-                <option value="cash">Efectivo caja chica</option>
-                <option value="transfer">Transferencia bancaria</option>
-                <option value="card">Tarjeta de débito/crédito</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Simulated receipt upload */}
-          <div className="p-3 bg-[#FAFAF8] rounded-xl border border-dashed border-[#E7E5E0] text-center">
-            <Upload className="w-5 h-5 text-[#CF6811] mx-auto mb-1" />
-            <div className="text-xs font-semibold text-[#111111]">
-              Foto del comprobante (Factura o Nota de venta)
-            </div>
-            <div className="text-[10px] text-[#6B6B6B] mt-0.5">
-              Simulado · "Lectura automática con OCR: próximamente"
-            </div>
-            <label className="mt-2 inline-flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-[#CF6811] hover:underline">
-              <input
-                type="checkbox"
-                checked={hasReceipt}
-                onChange={(e) => setHasReceipt(e.target.checked)}
-                className="accent-[#CF6811]"
-              />
-              Simular comprobante adjunto válido
-            </label>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)}>
-              Cancelar
-            </Button>
-            <Button variant="primary" type="submit">
-              Guardar gasto
-            </Button>
-          </div>
-        </form>
-      </Modal>
+      {crud.modals}
     </div>
   );
 };

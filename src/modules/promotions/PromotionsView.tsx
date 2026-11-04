@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Plus } from 'lucide-react';
 import { useApp } from '../../shared/context/AppContext';
+import { PROMOTION_FIELDS, emptyPromotion, promotionFromValues, promotionToValues } from '../../shared/forms/catalogForms';
+import { useEntityCrud } from '../../shared/hooks/useEntityCrud';
 import { usePagedList } from '../../shared/hooks/usePagedList';
 import { apiService } from '../../shared/services/apiService';
 import { Promotion } from '../../shared/types';
 import { Badge, BadgeVariant } from '../../shared/ui/Badge';
 import { Button } from '../../shared/ui/Button';
 import { FilterBar } from '../../shared/ui/FilterBar';
-import { Modal } from '../../shared/ui/Modal';
 import { Column, PaginatedTable } from '../../shared/ui/PaginatedTable';
+import { RowActions } from '../../shared/ui/RowActions';
+import { StatStrip } from '../../shared/ui/StatStrip';
 
 const STATUS: Record<Promotion['status'], { label: string; variant: BadgeVariant }> = {
   draft: { label: 'Borrador', variant: 'banana' },
@@ -16,15 +19,15 @@ const STATUS: Record<Promotion['status'], { label: string; variant: BadgeVariant
   ended: { label: 'Finalizada', variant: 'neutral' },
 };
 
-const FIELD = 'mt-1 w-full h-10 border border-[#E7E5E0] rounded-xl px-3 font-normal';
-const EMPTY_FORM = { title: '', item: '', discount: '', duration: '' };
-
 export const PromotionsView: React.FC = () => {
   const { showToast } = useApp();
   const list = usePagedList((params) => apiService.getPromotions(params));
-  const [isCreating, setIsCreating] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const isComplete = Object.values(form).every((value) => value.trim());
+  const crud = useEntityCrud<Promotion>({
+    collection: 'promotions', noun: 'promoción', fields: PROMOTION_FIELDS, emptyValues: emptyPromotion, toValues: promotionToValues, fromValues: promotionFromValues,
+    nameOf: (item) => `"${item.title ?? 'La promoción'}"`, onChanged: () => list.reload(),
+  });
+  const all = apiService.getCollection('promotions') as Promotion[];
+  const count = (status: Promotion['status']) => all.filter((promotion) => promotion.status === status).length;
 
   const setStatus = async (promotion: Promotion, status: Promotion['status']) => {
     await apiService.setPromotionStatus(promotion.id, status);
@@ -32,36 +35,31 @@ export const PromotionsView: React.FC = () => {
     list.reload();
   };
 
-  const create = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!isComplete) return;
-    await apiService.addPromotion(form);
-    showToast('Borrador guardado. No se aplica hasta que lo apruebes.', 'success');
-    setForm(EMPTY_FORM);
-    setIsCreating(false);
-    list.reload();
-  };
-
   const columns: Column<Promotion>[] = [
-    { header: 'Promoción', accessor: (promotion) => <span className="text-xs font-bold text-[#111111]">{promotion.title}</span> },
-    { header: 'Aplica a', accessor: (promotion) => <span className="text-xs">{promotion.item}</span> },
-    { header: 'Oferta', accessor: (promotion) => <span className="text-xs">{promotion.discount}</span> },
-    { header: 'Vigencia', accessor: (promotion) => <span className="text-xs text-[#6B6B6B]">{promotion.duration}</span> },
-    { header: 'Estado', accessor: (promotion) => <Badge variant={STATUS[promotion.status].variant} size="sm">{STATUS[promotion.status].label}</Badge> },
+    { header: 'Promoción', accessor: (p) => <span className="text-xs font-bold text-[#111111]">{p.title}</span> },
+    { header: 'Aplica a', accessor: (p) => <span className="text-xs">{p.item}</span> },
+    { header: 'Oferta', accessor: (p) => <span className="text-xs">{p.discount}</span> },
+    { header: 'Vigencia', accessor: (p) => <span className="text-xs text-[#6B6B6B]">{p.duration}</span> },
+    { header: 'Estado', accessor: (p) => <Badge variant={STATUS[p.status].variant} size="sm">{STATUS[p.status].label}</Badge> },
     {
-      header: 'Acción',
+      header: 'Aprobación',
       align: 'right',
-      accessor: (promotion) =>
-        promotion.status === 'draft' ? (
-          <Button variant="primary" size="sm" onClick={() => setStatus(promotion, 'active')}>Aprobar</Button>
-        ) : promotion.status === 'active' ? (
-          <Button variant="secondary" size="sm" onClick={() => setStatus(promotion, 'ended')}>Finalizar</Button>
-        ) : null,
+      accessor: (p) => (p.status === 'draft' ? <Button variant="primary" size="sm" onClick={() => setStatus(p, 'active')}>Aprobar</Button> : p.status === 'active' ? <Button variant="secondary" size="sm" onClick={() => setStatus(p, 'ended')}>Finalizar</Button> : null),
     },
+    { header: '', align: 'right', accessor: (p) => <RowActions name={p.title} onEdit={() => crud.openEdit(p)} onDelete={() => crud.askDelete(p)} /> },
   ];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      <StatStrip stats={[
+        { label: 'Activas', value: String(count('active')), hint: 'Aplicándose ahora', tone: 'olive' },
+        { label: 'Borradores', value: String(count('draft')), hint: 'Esperan tu aprobación', tone: 'banana' },
+        { label: 'Finalizadas', value: String(count('ended')), hint: 'Historial', tone: 'harvest' },
+      ]} />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-[#6B6B6B]">Noah sugiere, tú apruebas. Ninguna promoción cambia precios ni se publica sola.</p>
+        <Button variant="primary" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={crud.openNew}>Nueva promoción</Button>
+      </div>
       <FilterBar
         search={{ value: list.search, onChange: list.setSearch, placeholder: 'Buscar promoción…' }}
         fields={[{ key: 'filter', label: 'Estado', type: 'select', options: [{ value: 'all', label: 'Todas' }, { value: 'draft', label: 'Borradores' }, { value: 'active', label: 'Activas' }, { value: 'ended', label: 'Finalizadas' }] }]}
@@ -72,10 +70,6 @@ export const PromotionsView: React.FC = () => {
         total={list.result.total}
         totalLabel="promociones"
       />
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-[#6B6B6B]">Noah sugiere, tú apruebas. Ninguna promoción cambia precios ni se publica sola.</p>
-        <Button variant="primary" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsCreating(true)}>Nueva promoción</Button>
-      </div>
       <PaginatedTable
         columns={columns}
         data={list.result.items}
@@ -90,18 +84,10 @@ export const PromotionsView: React.FC = () => {
         onRetry={list.reload}
         emptyTitle="Aún no tienes promociones"
         emptyDescription="Crea una o acepta una sugerencia de Noah desde Alertas."
-        emptyAction={{ label: 'Nueva promoción', onClick: () => setIsCreating(true) }}
-        rowKey={(promotion) => promotion.id}
+        emptyAction={{ label: 'Nueva promoción', onClick: crud.openNew }}
+        rowKey={(p) => p.id}
       />
-      <Modal isOpen={isCreating} onClose={() => setIsCreating(false)} title="Nueva promoción" subtitle="Se guarda como borrador" maxWidth="sm">
-        <form onSubmit={create} className="space-y-3 text-xs font-semibold text-[#111111]">
-          <label className="block">Nombre<input autoFocus value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className={FIELD} /></label>
-          <label className="block">Aplica a<input value={form.item} onChange={(event) => setForm({ ...form, item: event.target.value })} className={FIELD} /></label>
-          <label className="block">Oferta<input value={form.discount} onChange={(event) => setForm({ ...form, discount: event.target.value })} className={FIELD} /></label>
-          <label className="block">Vigencia<input value={form.duration} onChange={(event) => setForm({ ...form, duration: event.target.value })} className={FIELD} /></label>
-          <Button variant="primary" type="submit" className="w-full" disabled={!isComplete}>{isComplete ? 'Guardar borrador' : 'Completa todos los campos'}</Button>
-        </form>
-      </Modal>
+      {crud.modals}
     </div>
   );
 };

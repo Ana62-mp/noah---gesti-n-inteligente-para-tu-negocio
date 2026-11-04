@@ -209,6 +209,9 @@ const useAppState = () => {
 
   const addMember = (name: string, role: UserRole) => persistTeam([...team, buildMember(`m-${Date.now()}`, name, role)]);
 
+  const updateMember = (memberId: string, changes: Partial<Pick<TeamMember, 'name' | 'role'>>) =>
+    persistTeam(team.map((member) => (member.id === memberId ? { ...member, ...changes } : member)));
+
   const removeMember = (memberId: string) => persistTeam(team.filter(({ id }) => id !== memberId));
 
   const setIsGeminiMode = (enabled: boolean) => {
@@ -291,6 +294,7 @@ const useAppState = () => {
     setMemberAccess,
     addMember,
     removeMember,
+    updateMember,
     activeModules,
     toggleModule,
     accessibleSections,

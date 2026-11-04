@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
 import { apiService } from '../../shared/services/apiService';
 import { Appointment, BarberService } from '../../shared/types';
-import { BARBER_SERVICES_MOCK } from '../../shared/services/mockData';
 import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
 import { FilterBar } from '../../shared/ui/FilterBar';
+import { RowActions } from '../../shared/ui/RowActions';
+import { useEntityCrud } from '../../shared/hooks/useEntityCrud';
 import { Modal } from '../../shared/ui/Modal';
 import { NoahOrb } from '../../shared/ui/NoahOrb';
 import { formatCurrency } from '../../shared/utils/formatters';
@@ -29,7 +30,7 @@ const BARBERS = ['David', 'Carlos', 'Andrés'];
 export const BarbershopView: React.FC = () => {
   const { showToast, setActiveSection, canAccess } = useApp();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [services] = useState<BarberService[]>(BARBER_SERVICES_MOCK);
+  const [services] = useState<BarberService[]>(() => apiService.listServices().filter((service) => service.isActive));
   const [selectedBarber, setSelectedBarber] = useState('David');
   const [customerQuery, setCustomerQuery] = useState('');
   const [serviceFilter, setServiceFilter] = useState('');
@@ -42,6 +43,33 @@ export const BarbershopView: React.FC = () => {
   const [serviceId, setServiceId] = useState('bs-2');
   const [appointmentTime, setAppointmentTime] = useState('14:00');
   const [overlapError, setOverlapError] = useState<string | null>(null);
+  const crud = useEntityCrud<Appointment>({
+    collection: 'appointments', noun: 'cita', nameOf: (item) => `La cita de ${item.customerName ?? 'el cliente'}`, onChanged: () => loadAppointments(),
+    deleteWarning: 'la cita se quitará de la agenda.',
+    fields: [
+      { key: 'customerName', label: 'Cliente', type: 'text', required: true },
+      { key: 'customerPhone', label: 'Celular', type: 'tel', placeholder: '0991234567' },
+      { key: 'serviceId', label: 'Servicio', type: 'select', required: true, options: apiService.listServices().map(({ id, name }) => ({ value: id, label: name })) },
+      { key: 'barberName', label: 'Barbero', type: 'select', required: true, options: BARBERS.map((value) => ({ value, label: value })) },
+      { key: 'time', label: 'Hora (24 h)', type: 'time', required: true, placeholder: '14:30' },
+      { key: 'status', label: 'Estado', type: 'select', required: true, options: [{ value: 'confirmed', label: 'Confirmada' }, { value: 'in_progress', label: 'En el sillón' }, { value: 'completed', label: 'Atendida' }, { value: 'cancelled', label: 'Cancelada' }] },
+    ],
+    emptyValues: () => ({ customerName: '', customerPhone: '', serviceId: services[0]?.id ?? '', barberName: selectedBarber, time: '', status: 'confirmed' }),
+    toValues: (a) => ({ customerName: a.customerName, customerPhone: a.customerPhone, serviceId: a.serviceId, barberName: a.barberName, time: a.time, status: a.status }),
+    fromValues: (values, current) => {
+      const service = apiService.listServices().find((item) => item.id === values.serviceId) ?? services[0];
+      const data = {
+        customerName: String(values.customerName).trim(), customerPhone: String(values.customerPhone), serviceId: service.id, serviceName: service.name,
+        barberName: String(values.barberName), time: String(values.time), durationMinutes: service.durationMinutes, price: service.price, status: String(values.status) as Appointment['status'],
+      };
+      const others = appointments.filter((item) => item.id !== current?.id);
+      const slot = { barberName: data.barberName, date: current?.date ?? AGENDA_DATE, time: data.time, durationMinutes: data.durationMinutes };
+      if (data.status !== 'cancelled' && hasAppointmentOverlap(others, slot)) {
+        throw new Error(`Ese horario ya está ocupado para ${data.barberName}. Libres más cercanos: ${findFreeSlots(others, slot).join(', ')}.`);
+      }
+      return data;
+    },
+  });
 
   useEffect(() => {
     loadAppointments();
@@ -187,8 +215,9 @@ export const BarbershopView: React.FC = () => {
 
                 <div>
                   {appt ? (
-                    <span className="font-mono font-extrabold text-sm text-[#111111]">
-                      {formatCurrency(appt.price)}
+                    <span className="flex items-center gap-1">
+                      <span className="font-mono font-extrabold text-sm text-[#111111]">{formatCurrency(appt.price)}</span>
+                      <RowActions name={appt.customerName} onEdit={() => crud.openEdit(appt)} onDelete={() => crud.askDelete(appt)} />
                     </span>
                   ) : (
                     <button
@@ -309,6 +338,8 @@ export const BarbershopView: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {crud.modals}
     </div>
   );
 };

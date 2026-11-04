@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { StatStrip } from '../../shared/ui/StatStrip';
+import { useEntityCrud } from '../../shared/hooks/useEntityCrud';
+import { DISH_DEFAULTS, DISH_FIELDS, dishFromValues, dishToValues, emptyDish } from '../../shared/forms/operationForms';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { apiService } from '../../shared/services/apiService';
 import { Dish } from '../../shared/types';
 import { Button } from '../../shared/ui/Button';
@@ -28,6 +32,11 @@ export const MenuView: React.FC = () => {
   const canSeeCosts = canAccess('costing');
   const canEdit = currentRole === 'owner';
   const list = usePagedList((params) => apiService.getDishesPage(params), 'all', DISHES_PER_PAGE);
+  const crud = useEntityCrud<Dish>({
+    collection: 'dishes', noun: 'plato', fields: DISH_FIELDS, emptyValues: emptyDish, toValues: dishToValues, fromValues: dishFromValues,
+    newDefaults: DISH_DEFAULTS, nameOf: (item) => item.name ?? 'El plato', deleteWarning: 'dejará de aparecer en la carta, las mesas y los reportes.', onChanged: () => list.reload(),
+  });
+  const all = apiService.getCollection('dishes') as Dish[];
 
   const handleToggleAvailability = async (dishId: string) => {
     await apiService.toggleDishAvailability(dishId);
@@ -48,6 +57,20 @@ export const MenuView: React.FC = () => {
         )}
       </div>
 
+      <StatStrip stats={[
+        { label: 'Platos', value: String(all.length), hint: `${all.filter((d) => d.isAvailable).length} disponibles hoy`, tone: 'cinnamon' },
+        { label: 'Precio promedio', value: formatCurrency(all.reduce((sum, d) => sum + d.sellingPrice, 0) / Math.max(all.length, 1)), hint: 'De toda la carta', tone: 'banana' },
+        ...(canSeeCosts ? [
+          { label: 'Margen promedio', value: formatPercent(all.reduce((sum, d) => sum + d.grossMargin, 0) / Math.max(all.length, 1), 0), hint: 'Margen bruto', tone: 'olive' as const },
+          { label: 'Margen bajo', value: String(all.filter((d) => d.grossMargin < 0.3).length), hint: 'Menos de 30 %', tone: 'terracotta' as const },
+        ] : []),
+      ]} />
+      {canEdit && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-[#6B6B6B]">Administra la carta: precios, disponibilidad y nuevos platos.</p>
+          <Button variant="primary" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={crud.openNew}>Nuevo plato</Button>
+        </div>
+      )}
       <FilterBar
         search={{ value: list.search, onChange: list.setSearch, placeholder: 'Buscar plato…' }}
         fields={[
@@ -145,6 +168,12 @@ export const MenuView: React.FC = () => {
                   </Badge>
                 )}
 
+                {canEdit && (
+                  <span className="flex items-center gap-0.5">
+                    <button onClick={() => crud.openEdit(dish)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B6B6B] hover:bg-[#FBF6E6] hover:text-[#CF6811]" aria-label={`Editar ${dish.name}`} title="Editar"><Pencil className="w-4 h-4" /></button>
+                    <button onClick={() => crud.askDelete(dish)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B6B6B] hover:bg-[#F8E4DD] hover:text-[#A43108]" aria-label={`Eliminar ${dish.name}`} title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                  </span>
+                )}
                 {canSeeCosts && (
                 <button
                   onClick={() => setActiveSection('costing')}
@@ -172,6 +201,8 @@ export const MenuView: React.FC = () => {
           />
         </div>
       )}
+
+      {crud.modals}
     </div>
   );
 };

@@ -50,7 +50,7 @@ export const MODULE_CATALOG: readonly CatalogModule[] = [
   { id: 'products', name: 'Catálogo de productos', description: 'Productos, precios y disponibilidad.', category: 'sales', kind: 'optional', businesses: ['store'], recommendedFor: ['store'] },
   { id: 'promotions', name: 'Promociones', description: 'Borradores que solo se aplican si los apruebas.', category: 'sales', kind: 'optional', businesses: ALL, recommendedFor: ['restaurant', 'store'] },
 
-  { id: 'customers', name: 'Clientes y fiados', description: 'Historial, visitas y saldos pendientes.', category: 'customers', kind: 'optional', businesses: ALL, recommendedFor: ['store', 'barbershop', 'services'] },
+  { id: 'customers', name: 'Clientes y fiados', description: 'Historial, visitas y saldos pendientes.', category: 'customers', kind: 'optional', businesses: ALL, recommendedFor: ['restaurant', 'store', 'barbershop', 'services'] },
 
   { id: 'alerts', name: 'Alertas de Noah', description: 'Avisos de stock, márgenes y ventas.', category: 'ai', kind: 'optional', businesses: ALL, recommendedFor: ALL },
 

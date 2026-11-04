@@ -1,5 +1,11 @@
 import React from 'react';
 import { useApp } from '../../shared/context/AppContext';
+import { RowActions } from '../../shared/ui/RowActions';
+import { StatStrip } from '../../shared/ui/StatStrip';
+import { useEntityCrud } from '../../shared/hooks/useEntityCrud';
+import { Plus } from 'lucide-react';
+import { PRODUCT_FIELDS, emptyProduct, productFromValues, productToValues } from '../../shared/forms/catalogForms';
+import { Button } from '../../shared/ui/Button';
 import { usePagedList } from '../../shared/hooks/usePagedList';
 import { apiService } from '../../shared/services/apiService';
 import { Product } from '../../shared/types';
@@ -14,6 +20,13 @@ export const ProductsView: React.FC = () => {
   const { showToast, currentRole } = useApp();
   const list = usePagedList((params) => apiService.getProducts(params));
   const categories = ['all', ...apiService.getProductCategories()];
+  const crud = useEntityCrud<Product>({
+    collection: 'products', noun: 'producto', fields: PRODUCT_FIELDS, emptyValues: emptyProduct, toValues: productToValues, fromValues: productFromValues,
+    nameOf: (item) => item.name ?? 'El producto', onChanged: () => list.reload(),
+  });
+  const all = apiService.getCollection('products') as Product[];
+  const stockValue = all.reduce((sum, product) => sum + product.costPrice * product.stock, 0);
+  const margin = all.length ? all.reduce((sum, product) => sum + (product.price - product.costPrice) / product.price, 0) / all.length : 0;
 
   const toggle = async (product: Product) => {
     await apiService.toggleProduct(product.id);
@@ -22,7 +35,7 @@ export const ProductsView: React.FC = () => {
   };
 
   const columns: Column<Product>[] = [
-    { header: 'Producto', accessor: (product) => <span className="text-xs font-bold text-[#111111]">{product.name}</span> },
+    { header: 'Producto', accessor: (product) => (<div><div className="text-xs font-bold text-[#111111]">{product.name}</div><div className="text-[11px] text-[#6B6B6B]">{product.sku || 'Sin código'}</div></div>) },
     { header: 'Categoría', accessor: (product) => <span className="text-xs text-[#6B6B6B]">{product.category}</span> },
     { header: 'Precio', align: 'right', accessor: (product) => <span className="text-xs font-bold tabular-nums">{formatCurrency(product.price)}</span> },
     {
@@ -44,10 +57,21 @@ export const ProductsView: React.FC = () => {
         <input type="checkbox" checked={product.isAvailable} disabled={currentRole !== 'owner'} onChange={() => toggle(product)} aria-label={`Disponibilidad de ${product.name}`} className="w-4 h-4 accent-[#CF6811]" />
       ),
     },
+    { header: '', align: 'right', accessor: (item) => <RowActions name={item.name} onEdit={() => crud.openEdit(item)} onDelete={() => crud.askDelete(item)} /> },
   ];
 
   return (
     <div className="space-y-3">
+      <StatStrip stats={[
+        { label: 'Productos', value: String(all.length), hint: `${all.filter((p) => p.isAvailable).length} disponibles`, tone: 'cinnamon' },
+        { label: 'Sin stock', value: String(all.filter((p) => p.stock === 0).length), hint: 'Por reponer', tone: 'terracotta' },
+        { label: 'Valor en bodega', value: formatCurrency(stockValue), hint: 'Al costo de compra', tone: 'olive' },
+        { label: 'Margen promedio', value: `${Math.round(margin * 100)} %`, hint: 'Sobre el precio de venta', tone: 'banana' },
+      ]} />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-[#6B6B6B]">Controla precios, costos y stock de lo que vendes.</p>
+        <Button variant="primary" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={crud.openNew}>Nuevo producto</Button>
+      </div>
       <FilterBar
         search={{ value: list.search, onChange: list.setSearch, placeholder: 'Buscar producto…' }}
         fields={[
@@ -77,6 +101,8 @@ export const ProductsView: React.FC = () => {
         emptyDescription="Prueba con otra categoría o búsqueda."
         rowKey={(product) => product.id}
       />
+
+      {crud.modals}
     </div>
   );
 };
