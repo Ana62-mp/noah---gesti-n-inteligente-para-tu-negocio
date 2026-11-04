@@ -1,8 +1,8 @@
 export type BusinessType = 'restaurant' | 'store' | 'barbershop' | 'services';
 
-export type UserRole = 'owner' | 'cashier' | 'waiter' | 'kitchen' | 'inventory';
+export type UserRole = 'owner' | 'cashier' | 'waiter' | 'kitchen' | 'inventory' | 'barber';
 
-export type ModuleCategory = 'finances' | 'restaurant' | 'inventory' | 'services' | 'ai' | 'future';
+export type ModuleCategory = 'core' | 'finances' | 'operations' | 'inventory' | 'sales' | 'customers' | 'ai' | 'future';
 
 export type ModuleId =
   | 'dashboard'
@@ -19,21 +19,52 @@ export type ModuleId =
   | 'reports'
   | 'services_catalog'
   | 'appointments'
-  | 'assistant'
+  | 'products'
+  | 'customers'
+  | 'promotions'
   | 'alerts'
+  | 'team'
   | 'settings'
   | 'mobile_preview'
-  | 'voice_scenarios';
+  | 'voice_scenarios'
+  | 'assistant'
+  | 'invoice_reader'
+  | 'whatsapp_reports'
+  | 'social_posts';
 
-export interface ModuleDefinition {
-  id: ModuleId;
+export interface TeamMember {
+  id: string;
   name: string;
-  description: string;
-  category: ModuleCategory;
-  icon: string;
-  type: 'base' | 'recommended' | 'addon' | 'future';
-  enabled: boolean;
-  requiredRole?: UserRole[];
+  role: UserRole;
+  sections: string[];
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  lastVisit: string;
+  visits: number;
+  totalSpent: number;
+  balanceDue: number;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  stock: number;
+  isAvailable: boolean;
+}
+
+export interface Promotion {
+  id: string;
+  title: string;
+  item: string;
+  discount: string;
+  duration: string;
+  status: 'draft' | 'active' | 'ended';
 }
 
 export interface BusinessConfig {
@@ -78,7 +109,7 @@ export interface Sale {
   id: string;
   date: string;
   time: string;
-  channel: 'salon' | 'takeout' | 'delivery';
+  channel: 'salon' | 'takeout' | 'delivery' | 'counter' | 'chair';
   tableNumber?: number;
   waiterName?: string;
   customerName?: string;

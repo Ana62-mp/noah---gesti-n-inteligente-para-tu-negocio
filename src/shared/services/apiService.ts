@@ -9,6 +9,10 @@ import {
   DeliveryOrder,
   Appointment,
   NotificationAlert,
+  BusinessType,
+  Customer,
+  Product,
+  Promotion,
 } from '../types';
 import {
   generateSalesHistory,
@@ -22,6 +26,37 @@ import {
   APPOINTMENTS_MOCK,
   NOTIFICATIONS_MOCK,
 } from './mockData';
+import {
+  BARBER_ALERTS,
+  BARBER_CUSTOMERS,
+  BARBER_EXPENSES,
+  BARBER_SALES,
+  BARBER_STOCK,
+  BARBER_SUPPLIERS,
+  PROMOTIONS_SEED,
+  RESTAURANT_CUSTOMERS,
+  STORE_ALERTS,
+  STORE_CUSTOMERS,
+  STORE_EXPENSES,
+  STORE_PRODUCTS,
+  STORE_SALES,
+  STORE_STOCK,
+  STORE_SUPPLIERS,
+} from './businessMocks';
+
+type DatasetKey = 'restaurant' | 'store' | 'barbershop';
+
+interface BusinessDataset {
+  sales: Sale[];
+  expenses: Expense[];
+  ingredients: Ingredient[];
+  suppliers: Supplier[];
+  notifications: NotificationAlert[];
+  customers: Customer[];
+  promotions: Promotion[];
+}
+
+const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 export interface PaginatedResult<T> {
   items: T[];
@@ -41,16 +76,14 @@ export interface PaginationParams {
 }
 
 class ApiService {
-  private sales: Sale[] = [];
-  private expenses: Expense[] = [];
+  private datasets!: Record<DatasetKey, BusinessDataset>;
+  private activeDataset: DatasetKey = 'restaurant';
+  private products: Product[] = [];
   private dishes: Dish[] = [];
-  private ingredients: Ingredient[] = [];
-  private suppliers: Supplier[] = [];
   private tables: TableItem[] = [];
   private kitchenTickets: KitchenTicket[] = [];
   private deliveryOrders: DeliveryOrder[] = [];
   private appointments: Appointment[] = [];
-  private notifications: NotificationAlert[] = [];
   private simulateError: boolean = false;
   private simulateEmpty: boolean = false;
 
@@ -58,17 +91,137 @@ class ApiService {
     this.resetData();
   }
 
+  private get data(): BusinessDataset {
+    return this.datasets[this.activeDataset];
+  }
+  private get sales() { return this.data.sales; }
+  private get expenses() { return this.data.expenses; }
+  private get ingredients() { return this.data.ingredients; }
+  private get suppliers() { return this.data.suppliers; }
+  private get notifications() { return this.data.notifications; }
+  private get customers() { return this.data.customers; }
+  private get promotions() { return this.data.promotions; }
+
+  public setActiveBusiness(type: BusinessType) {
+    this.activeDataset = type === 'restaurant' || type === 'store' ? type : 'barbershop';
+  }
+
   public resetData() {
-    this.sales = generateSalesHistory();
-    this.expenses = generateExpensesHistory();
-    this.dishes = JSON.parse(JSON.stringify(DISHES_MOCK));
-    this.ingredients = JSON.parse(JSON.stringify(INGREDIENTS_MOCK));
-    this.suppliers = JSON.parse(JSON.stringify(SUPPLIERS_MOCK));
-    this.tables = JSON.parse(JSON.stringify(TABLES_MOCK));
-    this.kitchenTickets = JSON.parse(JSON.stringify(KITCHEN_TICKETS_MOCK));
-    this.deliveryOrders = JSON.parse(JSON.stringify(DELIVERY_ORDERS_MOCK));
-    this.appointments = JSON.parse(JSON.stringify(APPOINTMENTS_MOCK));
-    this.notifications = JSON.parse(JSON.stringify(NOTIFICATIONS_MOCK));
+    this.datasets = {
+      restaurant: {
+        sales: generateSalesHistory(),
+        expenses: generateExpensesHistory(),
+        ingredients: clone(INGREDIENTS_MOCK),
+        suppliers: clone(SUPPLIERS_MOCK),
+        notifications: clone(NOTIFICATIONS_MOCK),
+        customers: clone(RESTAURANT_CUSTOMERS),
+        promotions: clone(PROMOTIONS_SEED.restaurant),
+      },
+      store: {
+        sales: STORE_SALES(),
+        expenses: STORE_EXPENSES(),
+        ingredients: clone(STORE_STOCK),
+        suppliers: clone(STORE_SUPPLIERS),
+        notifications: clone(STORE_ALERTS),
+        customers: clone(STORE_CUSTOMERS),
+        promotions: clone(PROMOTIONS_SEED.store),
+      },
+      barbershop: {
+        sales: BARBER_SALES(),
+        expenses: BARBER_EXPENSES(),
+        ingredients: clone(BARBER_STOCK),
+        suppliers: clone(BARBER_SUPPLIERS),
+        notifications: clone(BARBER_ALERTS),
+        customers: clone(BARBER_CUSTOMERS),
+        promotions: clone(PROMOTIONS_SEED.barbershop),
+      },
+    };
+    this.products = clone(STORE_PRODUCTS);
+    this.dishes = clone(DISHES_MOCK);
+    this.tables = clone(TABLES_MOCK);
+    this.kitchenTickets = clone(KITCHEN_TICKETS_MOCK);
+    this.deliveryOrders = clone(DELIVERY_ORDERS_MOCK);
+    this.appointments = clone(APPOINTMENTS_MOCK);
+  }
+
+  private paginate<T>(list: T[], params: PaginationParams): PaginatedResult<T> {
+    const page = params.page || 1;
+    const pageSize = params.pageSize || 10;
+    const total = list.length;
+    const start = (page - 1) * pageSize;
+    return { items: list.slice(start, start + pageSize), total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+  }
+
+  public async getDishesPage(params: PaginationParams = {}): Promise<PaginatedResult<Dish>> {
+    await this.delay(200);
+    if (this.simulateError) throw new Error('Error al sincronizar la carta del restaurante.');
+    const term = params.search?.toLowerCase() ?? '';
+    const list = this.simulateEmpty
+      ? []
+      : this.dishes.filter(
+          (dish) =>
+            (!params.filter || params.filter === 'all' || dish.category === params.filter) &&
+            (!term || dish.name.toLowerCase().includes(term))
+        );
+    return this.paginate(list, params);
+  }
+
+  public async getCustomers(params: PaginationParams = {}): Promise<PaginatedResult<Customer>> {
+    await this.delay(200);
+    if (this.simulateError) throw new Error('No se pudo cargar la lista de clientes.');
+    const term = params.search?.toLowerCase() ?? '';
+    let list = this.simulateEmpty ? [] : this.customers.filter((customer) => !term || customer.name.toLowerCase().includes(term));
+    if (params.filter === 'owing') list = list.filter((customer) => customer.balanceDue > 0);
+    return this.paginate(list, params);
+  }
+
+  public async settleCustomerBalance(id: string): Promise<void> {
+    await this.delay(100);
+    const customer = this.customers.find((item) => item.id === id);
+    if (customer) customer.balanceDue = 0;
+  }
+
+  public async getProducts(params: PaginationParams = {}): Promise<PaginatedResult<Product>> {
+    await this.delay(200);
+    if (this.simulateError) throw new Error('No se pudo cargar el catálogo de productos.');
+    const term = params.search?.toLowerCase() ?? '';
+    const list = this.simulateEmpty
+      ? []
+      : this.products.filter(
+          (product) =>
+            (!params.filter || params.filter === 'all' || product.category === params.filter) &&
+            (!term || product.name.toLowerCase().includes(term))
+        );
+    return this.paginate(list, params);
+  }
+
+  public getProductCategories(): string[] {
+    return [...new Set(this.products.map(({ category }) => category))];
+  }
+
+  public async toggleProduct(id: string): Promise<void> {
+    await this.delay(100);
+    const product = this.products.find((item) => item.id === id);
+    if (product) product.isAvailable = !product.isAvailable;
+  }
+
+  public async getPromotions(params: PaginationParams = {}): Promise<PaginatedResult<Promotion>> {
+    await this.delay(150);
+    if (this.simulateError) throw new Error('No se pudieron cargar las promociones.');
+    return this.paginate(this.simulateEmpty ? [] : [...this.promotions], params);
+  }
+
+  public async addPromotion(promotion: Omit<Promotion, 'id' | 'status'>): Promise<Promotion> {
+    await this.delay(100);
+    const created: Promotion = { ...promotion, id: `promo-${Date.now()}`, status: 'draft' };
+    this.promotions.unshift(created);
+    return created;
+  }
+
+  public async setPromotionStatus(id: string, status: Promotion['status']): Promise<void> {
+    await this.delay(100);
+    const promotion = this.promotions.find((item) => item.id === id);
+    if (promotion) promotion.status = status;
   }
 
   public setSimulateError(val: boolean) {

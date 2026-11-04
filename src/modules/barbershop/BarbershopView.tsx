@@ -8,6 +8,7 @@ import { Badge } from '../../shared/ui/Badge';
 import { Modal } from '../../shared/ui/Modal';
 import { NoahOrb } from '../../shared/ui/NoahOrb';
 import { formatCurrency } from '../../shared/utils/formatters';
+import { findFreeSlots, hasAppointmentOverlap } from '../../shared/utils/appointmentRules';
 import {
   Scissors,
   CalendarCheck,
@@ -21,8 +22,10 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+const AGENDA_DATE = '2026-11-03';
+
 export const BarbershopView: React.FC = () => {
-  const { showToast, setIsAssistantOpen, setActiveSection } = useApp();
+  const { showToast, setActiveSection, canAccess } = useApp();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services] = useState<BarberService[]>(BARBER_SERVICES_MOCK);
   const [selectedBarber, setSelectedBarber] = useState('David');
@@ -48,15 +51,12 @@ export const BarbershopView: React.FC = () => {
     e.preventDefault();
     setOverlapError(null);
 
-    // Conflict check (Tuesday 14:00 with David is busy by Santiago Proaño!)
-    if (selectedBarber === 'David' && appointmentTime === '14:00') {
-      setOverlapError(
-        '¡Horario ocupado! David ya tiene cita con Santiago Proaño (Fade 45 min) a las 14:00. Noah sugiere 14:50 o 15:30.'
-      );
+    const srv = services.find((s) => s.id === serviceId) || services[0];
+    const slot = { barberName: selectedBarber, date: AGENDA_DATE, time: appointmentTime, durationMinutes: srv.durationMinutes };
+    if (hasAppointmentOverlap(appointments, slot)) {
+      setOverlapError(`Ese horario ya está ocupado para ${selectedBarber}. Libres más cercanos: ${findFreeSlots(appointments, slot).join(', ')}.`);
       return;
     }
-
-    const srv = services.find((s) => s.id === serviceId) || services[0];
 
     await apiService.addAppointment({
       customerName,
@@ -64,7 +64,7 @@ export const BarbershopView: React.FC = () => {
       serviceId: srv.id,
       serviceName: srv.name,
       barberName: selectedBarber,
-      date: '2026-11-03',
+      date: AGENDA_DATE,
       time: appointmentTime,
       durationMinutes: srv.durationMinutes,
       price: srv.price,
@@ -81,28 +81,17 @@ export const BarbershopView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Top Header & Cotizable Tag */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E7E5E0] shadow-[var(--shadow-soft)]">
-        <div>
-          <div className="flex items-center gap-2">
-            <Scissors className="w-5 h-5 text-[#CF6811]" />
-            <h2 className="text-lg font-bold text-[#111111]">Barber Kings · Agenda de Citas</h2>
-            <Badge variant="banana" size="sm">Módulo adicional · cotizable</Badge>
-          </div>
-          <p className="text-xs text-[#6B6B6B]">
-            Gestión de servicios por barbero, reserva por voz y prevención estricta de solapamientos.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+<div className="flex items-center gap-2">
           <Button
             variant="secondary"
             size="sm"
             leftIcon={<Mic className="w-4 h-4 text-[#CF6811]" />}
             onClick={() => setActiveSection('voice_scenarios')}
           >
-            Demostración de reserva por voz
+            Reservar por voz
           </Button>
 
           <Button
@@ -117,28 +106,6 @@ export const BarbershopView: React.FC = () => {
             Nueva cita
           </Button>
         </div>
-      </div>
-
-      {/* Services Catalog Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {services.map((srv) => (
-          <div
-            key={srv.id}
-            className="p-4 bg-white rounded-2xl border border-[#E7E5E0] shadow-2xs space-y-1.5"
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-xs text-[#111111]">{srv.name}</span>
-              <span className="font-mono font-extrabold text-sm text-[#CF6811]">
-                {formatCurrency(srv.price)}
-              </span>
-            </div>
-            <div className="flex items-center gap-1 text-[11px] text-[#6B6B6B]">
-              <Clock className="w-3 h-3" />
-              <span>{srv.durationMinutes} minutos</span>
-            </div>
-            <p className="text-[11px] text-[#6B6B6B] line-clamp-1">{srv.description}</p>
-          </div>
-        ))}
       </div>
 
       {/* Barber Filter Selector */}
@@ -160,7 +127,7 @@ export const BarbershopView: React.FC = () => {
       </div>
 
       {/* Schedule Agenda Timeline Grid */}
-      <div className="bg-white rounded-2xl border border-[#E7E5E0] p-6 shadow-[var(--shadow-soft)] space-y-4">
+      <div className="bg-white rounded-2xl border border-[#E7E5E0] p-4 shadow-[var(--shadow-soft)] space-y-4">
         <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-3">
           <div>
             <h3 className="text-base font-bold text-[#111111]">
@@ -174,16 +141,16 @@ export const BarbershopView: React.FC = () => {
         </div>
 
         {/* Time Slots List */}
-        <div className="space-y-2">
-          {['11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map((timeSlot) => {
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-2">
+          {['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'].map((timeSlot) => {
             const appt = appointments.find(
-              (a) => a.barberName === selectedBarber && a.time === timeSlot
+              (a) => a.barberName === selectedBarber && a.time.slice(0, 2) === timeSlot.slice(0, 2)
             );
 
             return (
               <div
                 key={timeSlot}
-                className={`p-3.5 rounded-xl border flex items-center justify-between transition-all ${
+                className={`p-2.5 rounded-xl border flex items-center justify-between transition-all ${
                   appt
                     ? 'bg-[#FBF6E6] border-[#EBD48F] shadow-[var(--shadow-soft)]'
                     : 'bg-[#FAFAF8] border-[#E7E5E0] hover:bg-white'
