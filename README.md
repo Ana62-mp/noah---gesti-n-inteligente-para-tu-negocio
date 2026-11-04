@@ -32,17 +32,12 @@ npm run lint
 npm test
 ```
 
-## Roles
+## Negocios, módulos y permisos
 
-| Rol | Ve |
-|---|---|
-| Dueño | Todo el negocio, sus finanzas y la configuración |
-| Caja | Ventas, cobros, mesas, delivery y carta con precios |
-| Mesero | Mesas, pedidos por voz y carta con precios |
-| Cocina | Solo comandas |
-| Inventario | Insumos, compras de mercadería, proveedores y alertas de stock |
-
-Las reglas viven en `src/shared/permissions/rolePermissions.ts`. En este prototipo se aplican en el navegador; en producción también deben validarse en el servidor.
+- Cada negocio (restaurante, tienda, barbería) tiene sus propios datos, textos y pantallas: `src/shared/business/`.
+- Los módulos se eligen al crear el negocio y en Configuración. Equipo, Noah y Noah Escucha son obligatorios: `moduleCatalog.ts`.
+- El administrador decide qué pantallas ve cada persona desde Equipo. Las reglas viven en `src/shared/permissions/rolePermissions.ts`.
+- En este prototipo los permisos se aplican en el navegador; en producción también deben validarse en el servidor.
 
 ## Convenciones
 
