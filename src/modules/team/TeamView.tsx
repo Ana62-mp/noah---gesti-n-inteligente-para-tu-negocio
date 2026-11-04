@@ -6,11 +6,15 @@ import { UserRole } from '../../shared/types';
 import { Badge } from '../../shared/ui/Badge';
 import { Button } from '../../shared/ui/Button';
 import { Modal } from '../../shared/ui/Modal';
+import { FilterBar } from '../../shared/ui/FilterBar';
 import { FormModal } from '../../shared/ui/FormModal';
 import { buildNavSections } from '../layout/sidebar/navigation.config';
 
 export const TeamView: React.FC = () => {
   const { team, currentBusiness, activeModules, setMemberAccess, addMember, removeMember, viewAsMember, showToast, updateMember } = useApp();
+  const [query, setQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const visibleTeam = team.filter(member => (!roleFilter || member.role === roleFilter) && member.name.toLowerCase().includes(query.trim().toLowerCase()));
   const [isEditing, setIsEditing] = useState(false);
   const [selectedId, setSelectedId] = useState((team.find(({ role }) => role !== 'owner') ?? team[0]).id);
   const [isAdding, setIsAdding] = useState(false);
@@ -60,8 +64,10 @@ export const TeamView: React.FC = () => {
           <h2 className="text-sm font-bold text-[#111111]">Personas ({team.length})</h2>
           <Button variant="primary" size="sm" leftIcon={<UserPlus className="w-3.5 h-3.5" />} onClick={() => setIsAdding(true)}>Agregar</Button>
         </div>
+        <FilterBar search={{ value: query, onChange: setQuery, placeholder: 'Buscar persona?' }} fields={[{ key: 'role', label: 'Rol', type: 'select', options: [{ value: '', label: 'Todos' }, ...getRolesForBusiness(currentBusiness.type).map(role => ({ value: role, label: ROLE_LABELS[role] }))] }]} values={{ role: roleFilter }} onChange={(_, value) => setRoleFilter(value)} onReset={() => { setQuery(''); setRoleFilter(''); }} activeCount={[query, roleFilter].filter(Boolean).length} total={visibleTeam.length} totalLabel="personas" />
+        {visibleTeam.length === 0 && <p className="p-3 text-xs text-[#6B6B6B]">No hay personas con estos filtros.</p>}
         <ul className="space-y-1 overflow-y-auto min-h-0">
-          {team.map((member) => (
+          {visibleTeam.map((member) => (
             <li key={member.id}>
               <button
                 onClick={() => setSelectedId(member.id)}

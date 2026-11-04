@@ -35,11 +35,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 }) => (
   <div className="flex flex-wrap items-end gap-x-3 gap-y-2 rounded-2xl border border-[#E7E5E0] bg-white p-3 shadow-[var(--shadow-soft)]">
     {search && (
-      <label className="flex-1 min-w-[200px] text-[11px] font-semibold text-[#6B6B6B]">
+      <label className="flex-1 basis-[200px] min-w-0 text-[11px] font-semibold text-[#6B6B6B]">
         Buscar
         <span className="relative block mt-1">
           <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-[#6B6B6B]" />
           <input
+            type="search"
             value={search.value}
             onChange={(event) => search.onChange(event.target.value)}
             placeholder={search.placeholder}
@@ -54,7 +55,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         {field.label}
         {field.type === 'select' ? (
           <select
-            value={values[field.key] ?? field.options[0].value}
+            value={values[field.key] ?? field.options[0]?.value ?? ''}
             onChange={(event) => onChange?.(field.key, event.target.value)}
             className={`${CONTROL} block mt-1 min-w-[140px] font-normal`}
           >

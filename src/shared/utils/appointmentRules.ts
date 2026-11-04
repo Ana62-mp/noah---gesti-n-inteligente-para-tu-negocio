@@ -19,6 +19,12 @@ const toMinutes = (time: string): number => {
 const toTime = (minutes: number): string =>
   `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 
+export const isWithinBusinessHours = (time: string, durationMinutes: number): boolean => {
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time) || !Number.isFinite(durationMinutes) || durationMinutes <= 0) return false;
+  const start = toMinutes(time);
+  return start >= 10 * 60 && start + durationMinutes <= CLOSING_TIME_MINUTES;
+};
+
 export const hasAppointmentOverlap = (appointments: Appointment[], slot: AppointmentSlot): boolean => {
   const start = toMinutes(slot.time);
   const end = start + slot.durationMinutes;
@@ -39,7 +45,7 @@ export const findFreeSlots = (
   let candidate = toMinutes(slot.time) + SLOT_STEP_MINUTES;
   while (free.length < limit && candidate + slot.durationMinutes <= CLOSING_TIME_MINUTES) {
     const time = toTime(candidate);
-    if (!hasAppointmentOverlap(appointments, { ...slot, time })) free.push(time);
+    if (isWithinBusinessHours(time, slot.durationMinutes) && !hasAppointmentOverlap(appointments, { ...slot, time })) free.push(time);
     candidate += SLOT_STEP_MINUTES;
   }
   return free;

@@ -5,6 +5,7 @@ import { KitchenTicket, TableItem } from '../../shared/types';
 import { Button } from '../../shared/ui/Button';
 import { Badge } from '../../shared/ui/Badge';
 import { Modal } from '../../shared/ui/Modal';
+import { FilterBar } from '../../shared/ui/FilterBar';
 import { formatCurrency } from '../../shared/utils/formatters';
 import {
   Grid3X3,
@@ -30,6 +31,10 @@ export const TablesView: React.FC = () => {
   const canCharge = canAccess('sales');
   const canUseVoice = canAccess('voice_scenarios');
   const [tables, setTables] = useState<TableItem[]>([]);
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('');
+  const [capacity, setCapacity] = useState('');
+  const [waiter, setWaiter] = useState('');
   const [selectedTable, setSelectedTable] = useState<TableItem | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [tableTickets, setTableTickets] = useState<KitchenTicket[]>([]);
@@ -95,22 +100,37 @@ export const TablesView: React.FC = () => {
     loadTables();
   };
 
+  const visibleTables = tables.filter(t => (!status || t.status === status) && (!capacity || String(t.capacity) === capacity) && (!waiter || t.waiterName === waiter) && `${t.name} ${t.id} ${t.waiterName ?? ''}`.toLowerCase().includes(query.trim().toLowerCase()));
+  const resetFilters = () => { setQuery(''); setStatus(''); setCapacity(''); setWaiter(''); };
+  const summaries = [
+    { status: 'free', title: 'Libres', hint: 'Listas para recibir clientes', color: 'bg-[#F3F5E8] text-[#5C5011]', Icon: CheckCircle2 },
+    { status: 'ordering', title: 'Pidiendo', hint: 'Acompaña la elección del menú', color: 'bg-[#FFF6DC] text-[#8A7424]', Icon: Utensils },
+    { status: 'occupied', title: 'Ocupadas', hint: 'Servicio y consumo en curso', color: 'bg-[#FDEBD6] text-[#CF6811]', Icon: Users },
+    { status: 'billing', title: 'Por cobrar', hint: 'Cuentas pendientes de cierre', color: 'bg-[#FBE3DA] text-[#A43108]', Icon: Receipt },
+  ];
+
   return (
     <div className="space-y-3">
-      {/* Top Header & Status Legend */}
-      <div className="flex flex-wrap items-center justify-end gap-2">
-{/* Legend with color + icon + text (constitucional) */}
-        <div className="flex items-center gap-2 flex-wrap text-xs">
-          <Badge variant="neutral">Libre</Badge>
-          <Badge variant="banana">Pidiendo</Badge>
-          <Badge variant="cinnamon">Ocupada</Badge>
-          <Badge variant="terracotta">Por cobrar</Badge>
-        </div>
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <div><h2 className="text-lg font-bold">Tu salón de un vistazo</h2><p className="text-xs text-[#6B6B6B]">Selecciona una mesa para revisar su comanda o recibir nuevos comensales.</p></div>
+        <Badge variant="olive">{tables.filter(t => t.status === 'free').reduce((sum, t) => sum + t.capacity, 0)} asientos disponibles</Badge>
       </div>
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+        {summaries.map(item => <button key={item.status} type="button" aria-pressed={status === item.status} onClick={() => setStatus(status === item.status ? '' : item.status)} className={`rounded-2xl border p-4 text-left transition-shadow hover:shadow-md ${item.color} ${status === item.status ? 'border-current ring-1 ring-current' : 'border-transparent'}`}>
+          <div className="flex items-center justify-between"><item.Icon size={24} /><strong className="text-3xl tabular-nums">{tables.filter(t => t.status === item.status).length}</strong></div>
+          <h3 className="font-bold mt-3">{item.title}</h3><p className="text-xs mt-1">{item.hint}</p>
+        </button>)}
+      </div>
+      <FilterBar search={{ value: query, onChange: setQuery, placeholder: 'Buscar mesa o mesero…' }} fields={[
+        { key: 'status', label: 'Estado', type: 'select', options: [{ value: '', label: 'Todos' }, ...summaries.map(s => ({ value: s.status, label: s.title }))] },
+        { key: 'capacity', label: 'Capacidad', type: 'select', options: [{ value: '', label: 'Todas' }, ...Array.from(new Set(tables.map(t => t.capacity))).sort((a, b) => a - b).map(n => ({ value: String(n), label: `${n} personas` }))] },
+        { key: 'waiter', label: 'Mesero', type: 'select', options: [{ value: '', label: 'Todos' }, ...Array.from(new Set(tables.map(t => t.waiterName).filter((name): name is string => Boolean(name)))).map(name => ({ value: name, label: name }))] },
+      ]} values={{ status, capacity, waiter }} onChange={(key, value) => key === 'status' ? setStatus(value) : key === 'capacity' ? setCapacity(value) : setWaiter(value)} onReset={resetFilters} activeCount={[query, status, capacity, waiter].filter(Boolean).length} total={visibleTables.length} totalLabel="mesas" />
+      {visibleTables.length === 0 && <div className="rounded-2xl border border-[#E7E5E0] bg-white p-8 text-center text-sm text-[#6B6B6B]">No hay mesas que coincidan con los filtros. <button onClick={resetFilters} className="font-bold text-[#CF6811] underline">Ver todas</button></div>}
 
       {/* Tables 12-Grid Layout */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6 gap-3">
-        {tables.map((t) => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+        {visibleTables.map((t) => {
           const statusConfig = {
             free: {
               label: 'Libre',
@@ -135,13 +155,14 @@ export const TablesView: React.FC = () => {
           }[t.status];
 
           return (
-            <div
+            <button
+              type="button"
               key={t.id}
               onClick={() => handleOpenTable(t)}
-              className={`p-3 rounded-2xl border card-lift cursor-pointer relative flex flex-col overflow-hidden ${statusConfig.border}`}
+              className={`p-5 min-h-56 text-left rounded-2xl border card-lift cursor-pointer relative flex flex-col overflow-hidden ${statusConfig.border}`}
             >
               <div className="flex items-start justify-between mb-3">
-                <span className="font-display font-extrabold text-base text-[#111111]">
+                <span className="font-display font-extrabold text-xl text-[#111111]">
                   Mesa {t.id}
                 </span>
                 <Badge variant={statusConfig.badgeVariant} size="sm">
@@ -149,11 +170,13 @@ export const TablesView: React.FC = () => {
                 </Badge>
               </div>
 
-              <div className="space-y-1 text-xs text-[#6B6B6B] mb-2">
+              <div className="space-y-2 text-sm text-[#6B6B6B] mb-4">
                 <div className="flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 shrink-0" />
                   <span>Capacidad: {t.capacity} personas</span>
                 </div>
+
+                {t.status === 'free' && <p className="text-xs leading-relaxed">Disponible para un grupo de hasta {t.capacity} personas. Abre la mesa para comenzar el servicio.</p>}
 
                 {t.status !== 'free' && (
                   <>
@@ -176,7 +199,7 @@ export const TablesView: React.FC = () => {
                 <span>{t.status === 'free' ? 'Asignar mesa' : 'Ver comanda'}</span>
                 <span>→</span>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

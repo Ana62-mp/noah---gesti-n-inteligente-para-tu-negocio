@@ -787,9 +787,24 @@ export const DELIVERY_ORDERS_MOCK: DeliveryOrder[] = [
   },
 ];
 
-export { SERVICES_SEED as BARBER_SERVICES_MOCK } from './catalogMocks';
+import { SERVICES_SEED as BARBER_SERVICES_MOCK } from './catalogMocks';
+export { BARBER_SERVICES_MOCK };
 
 export const APPOINTMENTS_MOCK: Appointment[] = [
+  ...Array.from({ length: 24 }, (_, index): Appointment => {
+    const service = BARBER_SERVICES_MOCK[index % BARBER_SERVICES_MOCK.length];
+    return {
+      id: `apt-calendar-${index + 1}`,
+      customerName: ['Mateo Salazar', 'Diego Vera', 'Emilio Castro', 'Javier Molina', 'Sebastián Rojas', 'Nicolás Torres', 'Gabriel Ponce', 'Martín López'][index % 8],
+      customerPhone: `099 240 ${String(1100 + index * 13).padStart(4, '0')}`,
+      serviceId: service.id, serviceName: service.name,
+      barberName: ['David', 'Carlos', 'Andrés'][index % 3],
+      date: `2026-11-${String(4 + Math.floor(index / 3)).padStart(2, '0')}`,
+      time: ['10:00', '12:30', '16:00'][index % 3],
+      durationMinutes: service.durationMinutes, price: service.price,
+      status: index === 1 ? 'in_progress' : index === 5 ? 'cancelled' : 'confirmed',
+    };
+  }),
   {
     id: 'apt-1',
     customerName: 'Santiago Proaño',

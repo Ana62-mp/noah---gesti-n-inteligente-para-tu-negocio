@@ -12,7 +12,7 @@ export const TodayAgendaPanel: React.FC = () => {
 
   useEffect(() => {
     apiService.getAppointments().then((all) => {
-      setAppointments([...all].sort((a, b) => a.time.localeCompare(b.time)).slice(0, VISIBLE_APPOINTMENTS));
+      setAppointments(all.filter(a => a.status === 'confirmed' || a.status === 'in_progress').sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`)).slice(0, VISIBLE_APPOINTMENTS));
     });
   }, []);
 
@@ -23,9 +23,9 @@ export const TodayAgendaPanel: React.FC = () => {
         <Button variant="ghost" size="sm" onClick={() => setActiveSection('appointments')}>Ver agenda</Button>
       </div>
       <ul className="divide-y divide-[#E7E5E0]">
-        {appointments.map(({ id, time, customerName, serviceName, barberName }) => (
+        {appointments.map(({ id, date, time, customerName, serviceName, barberName }) => (
           <li key={id} className="py-1.5 flex items-center gap-2.5 text-xs">
-            <span className="font-black tabular-nums text-[#CF6811]">{time}</span>
+            <span className="font-black tabular-nums text-[#CF6811]"><span className="block text-[10px] text-[#6B6B6B]">{date.slice(5).split('-').reverse().join('/')}</span>{time}</span>
             <span className="flex-1 min-w-0 truncate font-semibold text-[#111111]">{customerName}</span>
             <span className="text-[11px] text-[#6B6B6B] truncate">{serviceName} · {barberName}</span>
           </li>
