@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pagination } from './Pagination';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { SkeletonLoader } from './SkeletonLoader';
 import { EmptyState } from './EmptyState';
 import { ErrorState } from './ErrorState';
@@ -49,6 +50,8 @@ export function PaginatedTable<T>({
   rowKey,
   onRowClick,
 }: PaginatedTableProps<T>) {
+  const isWide = useMediaQuery('(min-width: 768px)');
+
   if (error) {
     return <ErrorState message={error} onRetry={onRetry} />;
   }
@@ -70,7 +73,8 @@ export function PaginatedTable<T>({
 
   return (
     <div className="bg-white rounded-2xl border border-[#E7E5E0] overflow-hidden shadow-xs">
-      <div className="hidden md:block overflow-x-auto">
+      {isWide && (
+      <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="bg-[#F5F4F1] border-b border-[#E7E5E0] text-xs font-semibold uppercase tracking-wider text-[#6B6B6B]">
             <tr>
@@ -130,8 +134,10 @@ export function PaginatedTable<T>({
           </tbody>
         </table>
       </div>
+      )}
 
-      <ul className="md:hidden divide-y divide-[#E7E5E0]">
+      {!isWide && (
+      <ul className="divide-y divide-[#E7E5E0]">
         {data.map((item) => (
           <li key={rowKey(item)} onClick={onRowClick ? () => onRowClick(item) : undefined} className={`p-3 space-y-1.5 ${onRowClick ? 'cursor-pointer' : ''}`}>
             {columns.map((column, index) => (
@@ -145,6 +151,7 @@ export function PaginatedTable<T>({
           </li>
         ))}
       </ul>
+      )}
       <Pagination
         page={page}
         pageSize={pageSize}
