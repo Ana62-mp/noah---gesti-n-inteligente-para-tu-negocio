@@ -74,12 +74,18 @@ export const applyActionDraft = async (draft: ActionDraft): Promise<string> => {
   if (draft.type === 'expense') return applyExpense(draft);
   if (draft.type === 'order') return applyOrder(draft);
   if (draft.type === 'appointment') return applyAppointment(draft);
-  return 'Promoción guardada como borrador. No se publica ni cambia precios hasta que la apliques.';
+  await apiService.addPromotion({
+    title: draft.title.replace('Borrador: ', ''),
+    item: String(draft.details.plato ?? 'Por definir'),
+    discount: String(draft.details.precioPromo ?? 'Por definir'),
+    duration: String(draft.details.vigencia ?? 'Por definir'),
+  });
+  return 'Promoción guardada como borrador. No se publica ni cambia precios hasta que la apruebes.';
 };
 
 export const SECTION_AFTER_DRAFT: Record<ActionDraft['type'], string> = {
   expense: 'expenses',
   order: 'kitchen',
-  promo: 'alerts',
+  promo: 'promotions',
   appointment: 'appointments',
 };

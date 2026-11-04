@@ -5,7 +5,7 @@ import { Button } from './Button';
 interface AccessDeniedProps {
   roleLabel: string;
   roleScope: string;
-  onGoHome: () => void;
+  onGoHome?: () => void;
 }
 
 export const AccessDenied: React.FC<AccessDeniedProps> = ({ roleLabel, roleScope, onGoHome }) => (
@@ -17,8 +17,12 @@ export const AccessDenied: React.FC<AccessDeniedProps> = ({ roleLabel, roleScope
     <p className="text-sm text-[#6B6B6B]">
       Estás usando el perfil de <strong className="text-[#111111]">{roleLabel}</strong>. {roleScope}
     </p>
-    <Button variant="primary" onClick={onGoHome}>
-      Ir a mi pantalla principal
-    </Button>
+    {onGoHome ? (
+      <Button variant="primary" onClick={onGoHome}>
+        Ir a mi pantalla principal
+      </Button>
+    ) : (
+      <p className="text-xs font-semibold text-[#A43108]">Aún no tienes pantallas asignadas. Pídele acceso al administrador.</p>
+    )}
   </div>
 );

@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../shared/context/AppContext';
 import { applyActionDraft, SECTION_AFTER_DRAFT } from '../../shared/services/actionDraftService';
 import { getRoleGreeting, getSuggestedChips } from '../../shared/services/assistantPolicy';
-import { canAccessSection } from '../../shared/permissions/rolePermissions';
 import { getErrorMessage } from '../../shared/utils/errors';
 import { RichText } from '../../shared/ui/RichText';
 import { DraftDetails, humanizeKey } from '../../shared/ui/DraftDetails';
@@ -37,6 +36,11 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
   const {
     currentBusiness,
     currentRole,
+    currentMember,
+    accessibleSections,
+    canAccess,
+    pendingQuestion,
+    clearPendingQuestion,
     isGeminiMode,
     isGeminiAvailable,
     setIsGeminiMode,
@@ -48,7 +52,7 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
     {
       id: 'welcome-1',
       sender: 'noah',
-      text: getRoleGreeting(currentRole, currentBusiness.ownerName.split(' ')[0]),
+      text: getRoleGreeting(currentRole, currentMember.name.split(' ')[0]),
       timestamp: new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
       provenance: {
         period: 'En vivo',
@@ -101,7 +105,7 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
     setOrbState('thinking');
 
     try {
-      const response = await aiService.askNoah(textToSend, currentBusiness, currentRole, messages);
+      const response = await aiService.askNoah(textToSend, currentBusiness, currentRole, messages, accessibleSections);
       setIsTyping(false);
       setOrbState('idle');
       setMessages((prev) => [...prev, response.message]);
@@ -119,6 +123,12 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
       ]);
     }
   };
+
+  useEffect(() => {
+    if (!pendingQuestion) return;
+    handleSendMessage(pendingQuestion);
+    clearPendingQuestion();
+  }, [pendingQuestion]);
 
   const handleStartListening = () => {
     if (isListening) {
@@ -204,7 +214,7 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
       confetti({ particleCount: 45, spread: 60, origin: { y: 0.8 } });
       showToast(confirmation, 'success');
       const nextSection = SECTION_AFTER_DRAFT[draft.type];
-      if (canAccessSection(currentRole, nextSection)) setActiveSection(nextSection);
+      if (canAccess(nextSection)) setActiveSection(nextSection);
     } catch (error) {
       showToast(getErrorMessage(error), 'error');
     }
@@ -272,7 +282,7 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
               className="accent-[#CF6811] rounded cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             />
             <Sparkles className="w-3.5 h-3.5 text-[#CF6811]" />
-            <span className="hidden sm:inline">Modo IA real (Gemini)</span>
+            <span className="hidden sm:inline">IA real (Gemini)</span>
             <span className="sm:hidden">Gemini</span>
           </label>
         </div>
@@ -345,7 +355,7 @@ export const NoahChat: React.FC<NoahChatProps> = ({ isFullScreen = false }) => {
                                   <span>Margen bruto:</span>
                                   <span className="font-bold text-[#A43108] tabular-nums">{card.data.margin}</span>
                                 </div>
-                                {card.data.suggestedPrice && (
+                                {card.data.suggestedPrice && canAccess('costing') && (
                                   <Button
                                     variant="cinnamon"
                                     size="sm"

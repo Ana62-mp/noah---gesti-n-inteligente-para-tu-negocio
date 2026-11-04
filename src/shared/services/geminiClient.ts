@@ -1,6 +1,6 @@
 import { BusinessConfig, ChatMessage, UserRole } from '../types';
 import { buildBusinessContext } from './businessContext';
-import { canCreateDraft } from '../permissions/rolePermissions';
+import { canCreateDraftWith, getDefaultSections } from '../permissions/rolePermissions';
 
 const HISTORY_LIMIT = 6;
 
@@ -21,9 +21,9 @@ interface GeminiAnswer {
 
 const nowLabel = () => new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
 
-const toActionDraft = (accion: GeminiAnswer['accion'], role: UserRole): ChatMessage['actionDraft'] => {
+const toActionDraft = (accion: GeminiAnswer['accion'], sections: readonly string[]): ChatMessage['actionDraft'] => {
   const type = accion?.tipo ? ACTION_TYPES[accion.tipo] : undefined;
-  if (!type || !canCreateDraft(role, type)) return undefined;
+  if (!type || !canCreateDraftWith(sections, type)) return undefined;
   return {
     id: `draft-live-${Date.now()}`,
     type,
@@ -48,14 +48,15 @@ export const askGemini = async (
   query: string,
   business: BusinessConfig,
   role: UserRole,
-  history: ChatMessage[]
+  history: ChatMessage[],
+  sections: readonly string[] = getDefaultSections(role)
 ): Promise<ChatMessage | null> => {
   const res = await fetch('/api/gemini/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       message: query,
-      businessContext: buildBusinessContext(business, role),
+      businessContext: buildBusinessContext(business, role, sections),
       history: history.slice(-HISTORY_LIMIT).map(({ sender, text }) => ({ sender, text })),
     }),
   });
@@ -68,7 +69,7 @@ export const askGemini = async (
     text: data.texto || 'No pude generar una respuesta con los datos disponibles.',
     timestamp: nowLabel(),
     source: 'live',
-    actionDraft: toActionDraft(data.accion, role),
+    actionDraft: toActionDraft(data.accion, sections),
     provenance: {
       period: data.periodo || 'Período no especificado',
       modules: data.datosUsados?.length ? data.datosUsados : ['Datos de ejemplo del negocio'],

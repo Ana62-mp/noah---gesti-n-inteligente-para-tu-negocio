@@ -1,4 +1,4 @@
-import { BusinessConfig, BusinessType, ChatMessage, NotificationAlert, UserRole } from '../types';
+import { BusinessConfig, BusinessType, ChatMessage, ModuleId, NotificationAlert, TeamMember, UserRole } from '../types';
 
 type DraftType = NonNullable<ChatMessage['actionDraft']>['type'];
 
@@ -8,6 +8,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   waiter: 'Mesero',
   kitchen: 'Cocina',
   inventory: 'Inventario',
+  barber: 'Barbero',
 };
 
 export const ROLE_SCOPE: Record<UserRole, string> = {
@@ -16,74 +17,89 @@ export const ROLE_SCOPE: Record<UserRole, string> = {
   waiter: 'Mesas, pedidos y carta con precios. No ve finanzas ni costos.',
   kitchen: 'Solo comandas y tiempos de preparación.',
   inventory: 'Insumos, compras de mercadería, proveedores y alertas de stock.',
+  barber: 'Su agenda, los servicios y sus clientes. No ve finanzas.',
 };
 
-const ROLE_DEMO_NAMES: Record<Exclude<UserRole, 'owner'>, string> = {
-  cashier: 'Lucía Paredes',
-  waiter: 'Ana Martínez',
-  kitchen: 'Wilson Quishpe',
-  inventory: 'Jorge Cevallos',
-};
+export const ADMIN_ONLY_SECTIONS: readonly string[] = ['team', 'settings', 'mobile_preview'];
+
+const ALL_SECTIONS: readonly string[] = [
+  'dashboard', 'voice_scenarios', 'sales', 'expenses', 'cashflow', 'reports', 'tables', 'kitchen', 'delivery', 'menu', 'costing',
+  'appointments', 'services_catalog', 'products', 'promotions', 'customers', 'inventory', 'suppliers', 'alerts', ...ADMIN_ONLY_SECTIONS,
+];
 
 const SECTIONS_BY_ROLE: Record<Exclude<UserRole, 'owner'>, readonly string[]> = {
-  cashier: ['sales', 'tables', 'delivery', 'menu', 'appointments'],
+  cashier: ['sales', 'tables', 'delivery', 'menu', 'appointments', 'products', 'customers'],
   waiter: ['tables', 'menu', 'voice_scenarios'],
   kitchen: ['kitchen'],
   inventory: ['inventory', 'suppliers', 'expenses', 'alerts'],
+  barber: ['appointments', 'services_catalog', 'customers', 'voice_scenarios'],
 };
 
-const SIMPLE_BUSINESS_ROLES: readonly UserRole[] = ['owner', 'cashier'];
-const ALL_ROLES: readonly UserRole[] = ['owner', 'cashier', 'waiter', 'kitchen', 'inventory'];
+const HOME_PRIORITY: readonly string[] = ['dashboard', 'sales', 'tables', 'kitchen', 'appointments', 'inventory'];
 
-const DRAFTS_BY_ROLE: Record<UserRole, readonly DraftType[]> = {
-  owner: ['expense', 'order', 'promo', 'appointment'],
-  cashier: ['order', 'appointment'],
-  waiter: ['order'],
-  kitchen: [],
-  inventory: ['expense'],
+const ROLES_BY_BUSINESS: Record<BusinessType, readonly UserRole[]> = {
+  restaurant: ['owner', 'cashier', 'waiter', 'kitchen', 'inventory'],
+  store: ['owner', 'cashier', 'inventory'],
+  barbershop: ['owner', 'cashier', 'barber'],
+  services: ['owner', 'cashier', 'barber'],
 };
 
-export const canAccessSection = (role: UserRole, section: string): boolean =>
-  role === 'owner' || SECTIONS_BY_ROLE[role].includes(section);
+const DRAFT_SECTION: Record<DraftType, string> = {
+  expense: 'expenses',
+  order: 'tables',
+  promo: 'dashboard',
+  appointment: 'appointments',
+};
 
-export const canViewFinancials = (role: UserRole): boolean => role === 'owner';
+const ALERT_TOPIC_SECTIONS: Record<NotificationAlert['topic'], readonly string[]> = {
+  stock: ['inventory', 'dashboard'],
+  margin: ['costing', 'reports', 'dashboard'],
+  sales: ['reports', 'dashboard'],
+};
 
-export const canViewDishCosts = (role: UserRole): boolean => role === 'owner';
+export const getDefaultSections = (role: UserRole): readonly string[] =>
+  role === 'owner' ? ALL_SECTIONS : SECTIONS_BY_ROLE[role];
 
-export const canEditMenu = (role: UserRole): boolean => role === 'owner';
+export const canAccessSection = (role: UserRole, section: string): boolean => getDefaultSections(role).includes(section);
 
-export const canChargeTables = (role: UserRole): boolean => role === 'owner' || role === 'cashier';
+export const isGrantableSection = (section: string): boolean => !ADMIN_ONLY_SECTIONS.includes(section);
+
+export const getMemberSections = (member: TeamMember): readonly string[] =>
+  member.role === 'owner' ? ALL_SECTIONS : member.sections.filter(isGrantableSection);
+
+export const memberCanAccess = (member: TeamMember, activeModules: readonly ModuleId[], section: string): boolean => {
+  if (!getMemberSections(member).includes(section)) return false;
+  return section === 'mobile_preview' || section === 'settings' || activeModules.includes(section as ModuleId);
+};
+
+export const getMemberHome = (member: TeamMember, activeModules: readonly ModuleId[]): string | null => {
+  const allowed = HOME_PRIORITY.find((section) => memberCanAccess(member, activeModules, section));
+  if (allowed) return allowed;
+  return getMemberSections(member).find((section) => memberCanAccess(member, activeModules, section)) ?? null;
+};
+
+export const canCreateDraftWith = (sections: readonly string[], type: DraftType): boolean =>
+  sections.includes(DRAFT_SECTION[type]);
 
 export const canCreateDraft = (role: UserRole, type: DraftType): boolean =>
-  DRAFTS_BY_ROLE[role].includes(type);
+  canCreateDraftWith(getDefaultSections(role), type);
 
-export const getRolesForBusiness = (type: BusinessType): readonly UserRole[] =>
-  type === 'restaurant' ? ALL_ROLES : SIMPLE_BUSINESS_ROLES;
+export const getRolesForBusiness = (type: BusinessType): readonly UserRole[] => ROLES_BY_BUSINESS[type];
 
-export const getRoleHomeSection = (role: UserRole, type: BusinessType): string => {
-  if (role === 'kitchen') return 'kitchen';
-  if (role === 'waiter') return 'tables';
-  if (role === 'inventory') return 'inventory';
-  if (role === 'cashier') return 'sales';
-  if (type === 'store') return 'store';
-  if (type === 'barbershop') return 'appointments';
-  return 'dashboard';
+export const getRoleHomeSection = (role: UserRole): string => {
+  const sections = getDefaultSections(role);
+  return HOME_PRIORITY.find((section) => sections.includes(section)) ?? sections[0];
 };
 
-export const getVoiceScenariosForRole = (role: UserRole): readonly ('A' | 'B' | 'C')[] =>
-  role === 'owner' ? ['A', 'B', 'C'] : ['A'];
+export const getVisibleAlerts = (sections: readonly string[], alerts: NotificationAlert[]): NotificationAlert[] =>
+  alerts.filter(({ topic }) => ALERT_TOPIC_SECTIONS[topic].some((section) => sections.includes(section)));
 
-export const getVisibleAlerts = (role: UserRole, alerts: NotificationAlert[]): NotificationAlert[] => {
-  if (role === 'owner') return alerts;
-  if (role === 'inventory') return alerts.filter((alert) => alert.topic === 'stock');
-  return [];
-};
+export const buildMember = (id: string, name: string, role: UserRole): TeamMember => ({
+  id,
+  name,
+  role,
+  sections: [...getDefaultSections(role)],
+});
 
-export const getDisplayName = (
-  role: UserRole,
-  business: BusinessConfig,
-  sessionUser: { name: string; role: UserRole } | null
-): string => {
-  if (sessionUser?.role === role) return sessionUser.name;
-  return role === 'owner' ? business.ownerName : ROLE_DEMO_NAMES[role];
-};
+export const getDisplayName = (member: TeamMember | null, business: BusinessConfig): string =>
+  member?.name ?? business.ownerName;

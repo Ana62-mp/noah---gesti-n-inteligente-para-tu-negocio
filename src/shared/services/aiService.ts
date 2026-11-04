@@ -2,6 +2,7 @@ import { ChatMessage, BusinessConfig, UserRole } from '../types';
 import { askGemini } from './geminiClient';
 import { getRestrictedAnswer, isExpenseCapture, normalizeQuery, parseExpenseCapture } from './assistantPolicy';
 import { matchRoleIntent } from './roleIntents';
+import { getDefaultSections } from '../permissions/rolePermissions';
 import { formatCurrency } from '../utils/formatters';
 
 const nowLabel = () => new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
@@ -29,10 +30,11 @@ export class AIService {
     userQuery: string,
     business: BusinessConfig,
     role: UserRole,
-    history: ChatMessage[] = []
+    history: ChatMessage[] = [],
+    sections: readonly string[] = getDefaultSections(role)
   ): Promise<AIResponse> {
     const normalized = normalizeQuery(userQuery);
-    const restricted = getRestrictedAnswer(role, normalized);
+    const restricted = getRestrictedAnswer(role, normalized, sections);
     if (restricted) {
       return {
         message: {
@@ -52,7 +54,7 @@ export class AIService {
 
     if (this.isGeminiMode) {
       try {
-        const live = await askGemini(userQuery, business, role, history);
+        const live = await askGemini(userQuery, business, role, history, sections);
         if (live) return { message: live };
       } catch (err) {
         console.warn('Gemini unavailable, using demo engine.', err);
@@ -87,10 +89,7 @@ export class AIService {
 
     if (!isExpenseCapture(query)) {
       if (business.type === 'store') return this.matchStoreIntent(role, timestamp);
-      if (business.type === 'barbershop') return this.matchBarberIntent(query, timestamp);
-      if (query.includes('agendame') || query.includes('corte') || query.includes('barberia')) {
-        return this.matchBarberIntent(query, timestamp);
-      }
+      if (business.type === 'barbershop' || business.type === 'services') return this.matchBarberIntent(query, timestamp);
     }
 
     // 1. ¿Cuánto vendimos hoy?
@@ -494,6 +493,27 @@ export class AIService {
   }
 
   private matchBarberIntent(query: string, timestamp: string): AIResponse {
+    const isMoneyQuestion = ['vendimos', 'ventas', 'en caja', 'ganamos', 'ganancia', 'resultado', 'gaste', 'gastos'].some((word) => query.includes(word));
+    if (isMoneyQuestion) {
+      const isToday = query.includes('hoy') || query.includes('caja');
+      return {
+        message: {
+          id: `msg-noah-${Date.now()}`,
+          sender: 'noah',
+          text: isToday
+            ? `Hoy llevas **$112,00** cobrados en 14 turnos (ticket de $8,00): efectivo $64,00, DeUna $30,00 y tarjeta $18,00.`
+            : `En octubre cobraste **$3.200,00** y gastaste **$1.996,00** (comisiones $980, arriendo $520 y productos). Te quedan cerca de **$1.204,00**.`,
+          timestamp,
+          provenance: {
+            period: isToday ? 'Hoy' : 'Octubre 2026',
+            modules: ['Cobros y caja', 'Gastos y compras'],
+            updatedAt: 'Hoy',
+            certainty: 'Media: cifras referenciales antes de impuestos',
+          },
+        },
+      };
+    }
+
     const isConflict = query.includes('martes') && (query.includes('2 de la tarde') || query.includes('14:00'));
     const time = query.match(/\d{1,2}:\d{2}/)?.[0] ?? '15:00';
     if (isConflict) {
